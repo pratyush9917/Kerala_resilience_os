@@ -1,0 +1,429 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "zone_id": "Z01",
+        "name": "Aluva",
+        "lat": 10.1076,
+        "lon": 76.3516,
+        "elevation_m": 8.0,
+        "hist_risk": 0.95,
+        "terrain": 0.88,
+        "river_prox": 0.98,
+        "n_hospitals": 6,
+        "n_schools": 16
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              76.32,
+              10.135
+            ],
+            [
+              76.375,
+              10.14
+            ],
+            [
+              76.39,
+              10.105
+            ],
+            [
+              76.365,
+              10.075
+            ],
+            [
+              76.325,
+              10.085
+            ],
+            [
+              76.32,
+              10.135
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "zone_id": "Z02",
+        "name": "North Paravur",
+        "lat": 10.1455,
+        "lon": 76.2301,
+        "elevation_m": 4.0,
+        "hist_risk": 0.9,
+        "terrain": 0.92,
+        "river_prox": 0.88,
+        "n_hospitals": 5,
+        "n_schools": 14
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              76.195,
+              10.17
+            ],
+            [
+              76.265,
+              10.175
+            ],
+            [
+              76.28,
+              10.12
+            ],
+            [
+              76.22,
+              10.105
+            ],
+            [
+              76.195,
+              10.17
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "zone_id": "Z03",
+        "name": "Kanayannur (Ernakulam City)",
+        "lat": 9.9816,
+        "lon": 76.2999,
+        "elevation_m": 5.0,
+        "hist_risk": 0.72,
+        "terrain": 0.75,
+        "river_prox": 0.55,
+        "n_hospitals": 12,
+        "n_schools": 22
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              76.27,
+              10.02
+            ],
+            [
+              76.335,
+              10.015
+            ],
+            [
+              76.34,
+              9.945
+            ],
+            [
+              76.275,
+              9.95
+            ],
+            [
+              76.27,
+              10.02
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "zone_id": "Z04",
+        "name": "Kochi (Fort Kochi & Mattancherry)",
+        "lat": 9.965,
+        "lon": 76.242,
+        "elevation_m": 2.5,
+        "hist_risk": 0.65,
+        "terrain": 0.85,
+        "river_prox": 0.45,
+        "n_hospitals": 4,
+        "n_schools": 12
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              76.21,
+              9.995
+            ],
+            [
+              76.265,
+              9.99
+            ],
+            [
+              76.265,
+              9.93
+            ],
+            [
+              76.215,
+              9.935
+            ],
+            [
+              76.21,
+              9.995
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "zone_id": "Z05",
+        "name": "Kalamassery",
+        "lat": 10.053,
+        "lon": 76.321,
+        "elevation_m": 12.0,
+        "hist_risk": 0.7,
+        "terrain": 0.6,
+        "river_prox": 0.75,
+        "n_hospitals": 7,
+        "n_schools": 15
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              76.285,
+              10.08
+            ],
+            [
+              76.35,
+              10.08
+            ],
+            [
+              76.355,
+              10.025
+            ],
+            [
+              76.28,
+              10.03
+            ],
+            [
+              76.285,
+              10.08
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "zone_id": "Z06",
+        "name": "Kunnathunad (Perumbavoor)",
+        "lat": 10.1115,
+        "lon": 76.478,
+        "elevation_m": 18.0,
+        "hist_risk": 0.78,
+        "terrain": 0.55,
+        "river_prox": 0.82,
+        "n_hospitals": 5,
+        "n_schools": 18
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              76.41,
+              10.16
+            ],
+            [
+              76.54,
+              10.155
+            ],
+            [
+              76.535,
+              10.06
+            ],
+            [
+              76.405,
+              10.07
+            ],
+            [
+              76.41,
+              10.16
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "zone_id": "Z07",
+        "name": "Muvattupuzha",
+        "lat": 9.983,
+        "lon": 76.58,
+        "elevation_m": 22.0,
+        "hist_risk": 0.62,
+        "terrain": 0.5,
+        "river_prox": 0.8,
+        "n_hospitals": 5,
+        "n_schools": 15
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              76.51,
+              10.05
+            ],
+            [
+              76.65,
+              10.04
+            ],
+            [
+              76.64,
+              9.92
+            ],
+            [
+              76.505,
+              9.93
+            ],
+            [
+              76.51,
+              10.05
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "zone_id": "Z08",
+        "name": "Kothamangalam",
+        "lat": 10.062,
+        "lon": 76.632,
+        "elevation_m": 55.0,
+        "hist_risk": 0.38,
+        "terrain": 0.35,
+        "river_prox": 0.6,
+        "n_hospitals": 4,
+        "n_schools": 14
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              76.56,
+              10.15
+            ],
+            [
+              76.75,
+              10.14
+            ],
+            [
+              76.73,
+              9.98
+            ],
+            [
+              76.565,
+              10.0
+            ],
+            [
+              76.56,
+              10.15
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "zone_id": "Z09",
+        "name": "Angamaly",
+        "lat": 10.196,
+        "lon": 76.386,
+        "elevation_m": 14.0,
+        "hist_risk": 0.8,
+        "terrain": 0.65,
+        "river_prox": 0.8,
+        "n_hospitals": 5,
+        "n_schools": 14
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              76.34,
+              10.25
+            ],
+            [
+              76.44,
+              10.245
+            ],
+            [
+              76.435,
+              10.15
+            ],
+            [
+              76.33,
+              10.155
+            ],
+            [
+              76.34,
+              10.25
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "zone_id": "Z10",
+        "name": "Tripunithura",
+        "lat": 9.948,
+        "lon": 76.348,
+        "elevation_m": 7.0,
+        "hist_risk": 0.58,
+        "terrain": 0.7,
+        "river_prox": 0.52,
+        "n_hospitals": 4,
+        "n_schools": 12
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              76.315,
+              9.97
+            ],
+            [
+              76.395,
+              9.965
+            ],
+            [
+              76.39,
+              9.9
+            ],
+            [
+              76.31,
+              9.91
+            ],
+            [
+              76.315,
+              9.97
+            ]
+          ]
+        ]
+      }
+    }
+  ]
+}
