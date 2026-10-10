@@ -1,0 +1,457 @@
+{
+  "nodes": {
+    "N_ALUVA_RSTN": {
+      "name": "Aluva Railway Station",
+      "lat": 10.108,
+      "lon": 76.353,
+      "zone_id": "Z01"
+    },
+    "N_ALUVA_MANAP": {
+      "name": "Aluva Manappuram Ghat",
+      "lat": 10.114,
+      "lon": 76.348,
+      "zone_id": "Z01"
+    },
+    "N_ALUVA_BANKJN": {
+      "name": "Aluva Bank Junction",
+      "lat": 10.105,
+      "lon": 76.357,
+      "zone_id": "Z01"
+    },
+    "N_PARAVUR_JN": {
+      "name": "North Paravur Town",
+      "lat": 10.145,
+      "lon": 76.23,
+      "zone_id": "Z02"
+    },
+    "N_VARAPUZHA_BR": {
+      "name": "Varapuzha Bridge",
+      "lat": 10.076,
+      "lon": 76.275,
+      "zone_id": "Z02"
+    },
+    "N_EDAPPALLY_TOLL": {
+      "name": "Edappally Toll / LuLu Junction",
+      "lat": 10.026,
+      "lon": 76.308,
+      "zone_id": "Z03"
+    },
+    "N_KALOOR_STAD": {
+      "name": "Kaloor Stadium Junction",
+      "lat": 9.998,
+      "lon": 76.297,
+      "zone_id": "Z03"
+    },
+    "N_EKM_SOUTH": {
+      "name": "Ernakulam South Railway Station",
+      "lat": 9.968,
+      "lon": 76.291,
+      "zone_id": "Z03"
+    },
+    "N_MG_ROAD": {
+      "name": "MG Road / Shenoys Junction",
+      "lat": 9.978,
+      "lon": 76.282,
+      "zone_id": "Z03"
+    },
+    "N_FORT_KOCHI": {
+      "name": "Fort Kochi Bus Stand",
+      "lat": 9.965,
+      "lon": 76.242,
+      "zone_id": "Z04"
+    },
+    "N_MATTANCHERRY": {
+      "name": "Mattancherry Market",
+      "lat": 9.957,
+      "lon": 76.255,
+      "zone_id": "Z04"
+    },
+    "N_KALAMASSERY": {
+      "name": "Kalamassery Metro Junction",
+      "lat": 10.053,
+      "lon": 76.321,
+      "zone_id": "Z05"
+    },
+    "N_CUSAT_JN": {
+      "name": "CUSAT University Gate",
+      "lat": 10.045,
+      "lon": 76.327,
+      "zone_id": "Z05"
+    },
+    "N_CONTAINER_RD": {
+      "name": "Container Terminal Highway",
+      "lat": 10.04,
+      "lon": 76.268,
+      "zone_id": "Z05"
+    },
+    "N_PERUMBAVOOR": {
+      "name": "Perumbavoor Town Centre",
+      "lat": 10.111,
+      "lon": 76.478,
+      "zone_id": "Z06"
+    },
+    "N_KALADY_BR": {
+      "name": "Kalady Bridge (Periyar)",
+      "lat": 10.165,
+      "lon": 76.438,
+      "zone_id": "Z06"
+    },
+    "N_MUVATTUPUZHA": {
+      "name": "Muvattupuzha Kacherithazham",
+      "lat": 9.983,
+      "lon": 76.58,
+      "zone_id": "Z07"
+    },
+    "N_KOTHAMANGALAM": {
+      "name": "Kothamangalam Town",
+      "lat": 10.062,
+      "lon": 76.632,
+      "zone_id": "Z08"
+    },
+    "N_ANGAMALY_TOWN": {
+      "name": "Angamaly KSRTC Centre",
+      "lat": 10.196,
+      "lon": 76.386,
+      "zone_id": "Z09"
+    },
+    "N_CIAL_AIRPORT": {
+      "name": "Cochin International Airport (CIAL)",
+      "lat": 10.152,
+      "lon": 76.392,
+      "zone_id": "Z09"
+    },
+    "N_TRIPUNITHURA": {
+      "name": "Tripunithura Statue Junction",
+      "lat": 9.948,
+      "lon": 76.348,
+      "zone_id": "Z10"
+    },
+    "N_KAKKANAD_INFO": {
+      "name": "Infopark Kakkanad Expressway",
+      "lat": 10.012,
+      "lon": 76.363,
+      "zone_id": "Z03"
+    }
+  },
+  "edges": [
+    {
+      "u": "N_ALUVA_MANAP",
+      "v": "N_ALUVA_RSTN",
+      "name": "Aluva Ghat Road",
+      "length": 863.0,
+      "zone_id": "Z01",
+      "u_lat": 10.114,
+      "u_lon": 76.348,
+      "v_lat": 10.108,
+      "v_lon": 76.353
+    },
+    {
+      "u": "N_ALUVA_RSTN",
+      "v": "N_ALUVA_BANKJN",
+      "name": "Aluva Bank Road",
+      "length": 550.5,
+      "zone_id": "Z01",
+      "u_lat": 10.108,
+      "u_lon": 76.353,
+      "v_lat": 10.105,
+      "v_lon": 76.357
+    },
+    {
+      "u": "N_ALUVA_BANKJN",
+      "v": "N_KALAMASSERY",
+      "name": "NH 544 Aluva-Kalamassery",
+      "length": 6997.6,
+      "zone_id": "Z01",
+      "u_lat": 10.105,
+      "u_lon": 76.357,
+      "v_lat": 10.053,
+      "v_lon": 76.321
+    },
+    {
+      "u": "N_KALAMASSERY",
+      "v": "N_CUSAT_JN",
+      "name": "Kalamassery Highway",
+      "length": 1105.8,
+      "zone_id": "Z05",
+      "u_lat": 10.053,
+      "u_lon": 76.321,
+      "v_lat": 10.045,
+      "v_lon": 76.327
+    },
+    {
+      "u": "N_CUSAT_JN",
+      "v": "N_EDAPPALLY_TOLL",
+      "name": "NH 544 Edappally Stretch",
+      "length": 2965.0,
+      "zone_id": "Z03",
+      "u_lat": 10.045,
+      "u_lon": 76.327,
+      "v_lat": 10.026,
+      "v_lon": 76.308
+    },
+    {
+      "u": "N_EDAPPALLY_TOLL",
+      "v": "N_KALOOR_STAD",
+      "name": "Kaloor-Edappally Road",
+      "length": 3338.3,
+      "zone_id": "Z03",
+      "u_lat": 10.026,
+      "u_lon": 76.308,
+      "v_lat": 9.998,
+      "v_lon": 76.297
+    },
+    {
+      "u": "N_KALOOR_STAD",
+      "v": "N_MG_ROAD",
+      "name": "Banerji Road",
+      "length": 2764.8,
+      "zone_id": "Z03",
+      "u_lat": 9.998,
+      "u_lon": 76.297,
+      "v_lat": 9.978,
+      "v_lon": 76.282
+    },
+    {
+      "u": "N_MG_ROAD",
+      "v": "N_EKM_SOUTH",
+      "name": "MG Road Commercial Corridor",
+      "length": 1485.9,
+      "zone_id": "Z03",
+      "u_lat": 9.978,
+      "u_lon": 76.282,
+      "v_lat": 9.968,
+      "v_lon": 76.291
+    },
+    {
+      "u": "N_EKM_SOUTH",
+      "v": "N_TRIPUNITHURA",
+      "name": "SA Road - Pettah Link",
+      "length": 6626.9,
+      "zone_id": "Z10",
+      "u_lat": 9.968,
+      "u_lon": 76.291,
+      "v_lat": 9.948,
+      "v_lon": 76.348
+    },
+    {
+      "u": "N_EDAPPALLY_TOLL",
+      "v": "N_KAKKANAD_INFO",
+      "name": "Civil Station Kakkanad Road",
+      "length": 6220.4,
+      "zone_id": "Z03",
+      "u_lat": 10.026,
+      "u_lon": 76.308,
+      "v_lat": 10.012,
+      "v_lon": 76.363
+    },
+    {
+      "u": "N_KAKKANAD_INFO",
+      "v": "N_TRIPUNITHURA",
+      "name": "Seaport-Airport Road South",
+      "length": 7303.6,
+      "zone_id": "Z10",
+      "u_lat": 10.012,
+      "u_lon": 76.363,
+      "v_lat": 9.948,
+      "v_lon": 76.348
+    },
+    {
+      "u": "N_KALAMASSERY",
+      "v": "N_KAKKANAD_INFO",
+      "name": "Seaport-Airport Road North",
+      "length": 6475.6,
+      "zone_id": "Z05",
+      "u_lat": 10.053,
+      "u_lon": 76.321,
+      "v_lat": 10.012,
+      "v_lon": 76.363
+    },
+    {
+      "u": "N_CONTAINER_RD",
+      "v": "N_EDAPPALLY_TOLL",
+      "name": "Container Terminal Expressway",
+      "length": 4648.2,
+      "zone_id": "Z05",
+      "u_lat": 10.04,
+      "u_lon": 76.268,
+      "v_lat": 10.026,
+      "v_lon": 76.308
+    },
+    {
+      "u": "N_VARAPUZHA_BR",
+      "v": "N_CONTAINER_RD",
+      "name": "Varapuzha Container Link",
+      "length": 4075.7,
+      "zone_id": "Z02",
+      "u_lat": 10.076,
+      "u_lon": 76.275,
+      "v_lat": 10.04,
+      "v_lon": 76.268
+    },
+    {
+      "u": "N_ALUVA_MANAP",
+      "v": "N_PARAVUR_JN",
+      "name": "Aluva-Paravur Coastal Road",
+      "length": 13368.5,
+      "zone_id": "Z01",
+      "u_lat": 10.114,
+      "u_lon": 76.348,
+      "v_lat": 10.145,
+      "v_lon": 76.23
+    },
+    {
+      "u": "N_PARAVUR_JN",
+      "v": "N_VARAPUZHA_BR",
+      "name": "NH 66 Paravur-Varapuzha Link",
+      "length": 9117.7,
+      "zone_id": "Z02",
+      "u_lat": 10.145,
+      "u_lon": 76.23,
+      "v_lat": 10.076,
+      "v_lon": 76.275
+    },
+    {
+      "u": "N_MG_ROAD",
+      "v": "N_FORT_KOCHI",
+      "name": "Willingdon Island - Thoppumpady Bridge",
+      "length": 4612.9,
+      "zone_id": "Z04",
+      "u_lat": 9.978,
+      "u_lon": 76.282,
+      "v_lat": 9.965,
+      "v_lon": 76.242
+    },
+    {
+      "u": "N_FORT_KOCHI",
+      "v": "N_MATTANCHERRY",
+      "name": "Bazar Road Historical Link",
+      "length": 1678.8,
+      "zone_id": "Z04",
+      "u_lat": 9.965,
+      "u_lon": 76.242,
+      "v_lat": 9.957,
+      "v_lon": 76.255
+    },
+    {
+      "u": "N_MATTANCHERRY",
+      "v": "N_TRIPUNITHURA",
+      "name": "Kundannoor - Maradu Link",
+      "length": 10234.6,
+      "zone_id": "Z10",
+      "u_lat": 9.957,
+      "u_lon": 76.255,
+      "v_lat": 9.948,
+      "v_lon": 76.348
+    },
+    {
+      "u": "N_ALUVA_RSTN",
+      "v": "N_CIAL_AIRPORT",
+      "name": "Airport Seaport VIP Expressway",
+      "length": 6493.2,
+      "zone_id": "Z09",
+      "u_lat": 10.108,
+      "u_lon": 76.353,
+      "v_lat": 10.152,
+      "v_lon": 76.392
+    },
+    {
+      "u": "N_CIAL_AIRPORT",
+      "v": "N_ANGAMALY_TOWN",
+      "name": "Airport North Approach Road",
+      "length": 4936.4,
+      "zone_id": "Z09",
+      "u_lat": 10.152,
+      "u_lon": 76.392,
+      "v_lat": 10.196,
+      "v_lon": 76.386
+    },
+    {
+      "u": "N_ALUVA_BANKJN",
+      "v": "N_ANGAMALY_TOWN",
+      "name": "NH 544 Aluva-Angamaly Main Arterial",
+      "length": 10604.9,
+      "zone_id": "Z01",
+      "u_lat": 10.105,
+      "u_lon": 76.357,
+      "v_lat": 10.196,
+      "v_lon": 76.386
+    },
+    {
+      "u": "N_ALUVA_BANKJN",
+      "v": "N_PERUMBAVOOR",
+      "name": "AM Road (Aluva-Munnar Corridor)",
+      "length": 13262.5,
+      "zone_id": "Z01",
+      "u_lat": 10.105,
+      "u_lon": 76.357,
+      "v_lat": 10.111,
+      "v_lon": 76.478
+    },
+    {
+      "u": "N_ANGAMALY_TOWN",
+      "v": "N_KALADY_BR",
+      "name": "MC Road Angamaly-Kalady",
+      "length": 6653.6,
+      "zone_id": "Z09",
+      "u_lat": 10.196,
+      "u_lon": 76.386,
+      "v_lat": 10.165,
+      "v_lon": 76.438
+    },
+    {
+      "u": "N_KALADY_BR",
+      "v": "N_PERUMBAVOOR",
+      "name": "MC Road Kalady-Perumbavoor Bridge",
+      "length": 7431.3,
+      "zone_id": "Z06",
+      "u_lat": 10.165,
+      "u_lon": 76.438,
+      "v_lat": 10.111,
+      "v_lon": 76.478
+    },
+    {
+      "u": "N_PERUMBAVOOR",
+      "v": "N_MUVATTUPUZHA",
+      "name": "MC Road Perumbavoor-Muvattupuzha",
+      "length": 18091.4,
+      "zone_id": "Z06",
+      "u_lat": 10.111,
+      "u_lon": 76.478,
+      "v_lat": 9.983,
+      "v_lon": 76.58
+    },
+    {
+      "u": "N_PERUMBAVOOR",
+      "v": "N_KOTHAMANGALAM",
+      "name": "Aluva-Munnar Road via Kothamangalam",
+      "length": 17717.9,
+      "zone_id": "Z06",
+      "u_lat": 10.111,
+      "u_lon": 76.478,
+      "v_lat": 10.062,
+      "v_lon": 76.632
+    },
+    {
+      "u": "N_MUVATTUPUZHA",
+      "v": "N_KOTHAMANGALAM",
+      "name": "Muvattupuzha-Kothamangalam Link Highway",
+      "length": 10468.3,
+      "zone_id": "Z07",
+      "u_lat": 9.983,
+      "u_lon": 76.58,
+      "v_lat": 10.062,
+      "v_lon": 76.632
+    },
+    {
+      "u": "N_TRIPUNITHURA",
+      "v": "N_MUVATTUPUZHA",
+      "name": "Kochi-Madurai NH 85 Extension",
+      "length": 25704.3,
+      "zone_id": "Z07",
+      "u_lat": 9.948,
+      "u_lon": 76.348,
+      "v_lat": 9.983,
+      "v_lon": 76.58
+    }
+  ]
+}

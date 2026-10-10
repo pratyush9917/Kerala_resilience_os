@@ -1,0 +1,289 @@
+<?xml version='1.0' encoding='utf-8'?>
+<graphml xmlns="http://graphml.graphdrawing.org/xmlns" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://graphml.graphdrawing.org/xmlns http://graphml.graphdrawing.org/xmlns/1.0/graphml.xsd">
+  <key id="d6" for="edge" attr.name="zone_id" attr.type="string" />
+  <key id="d5" for="edge" attr.name="length" attr.type="double" />
+  <key id="d4" for="edge" attr.name="name" attr.type="string" />
+  <key id="d3" for="node" attr.name="zone_id" attr.type="string" />
+  <key id="d2" for="node" attr.name="lon" attr.type="double" />
+  <key id="d1" for="node" attr.name="lat" attr.type="double" />
+  <key id="d0" for="node" attr.name="name" attr.type="string" />
+  <graph edgedefault="undirected">
+    <node id="N_ALUVA_RSTN">
+      <data key="d0">Aluva Railway Station</data>
+      <data key="d1">10.108</data>
+      <data key="d2">76.353</data>
+      <data key="d3">Z01</data>
+    </node>
+    <node id="N_ALUVA_MANAP">
+      <data key="d0">Aluva Manappuram Ghat</data>
+      <data key="d1">10.114</data>
+      <data key="d2">76.348</data>
+      <data key="d3">Z01</data>
+    </node>
+    <node id="N_ALUVA_BANKJN">
+      <data key="d0">Aluva Bank Junction</data>
+      <data key="d1">10.105</data>
+      <data key="d2">76.357</data>
+      <data key="d3">Z01</data>
+    </node>
+    <node id="N_PARAVUR_JN">
+      <data key="d0">North Paravur Town</data>
+      <data key="d1">10.145</data>
+      <data key="d2">76.23</data>
+      <data key="d3">Z02</data>
+    </node>
+    <node id="N_VARAPUZHA_BR">
+      <data key="d0">Varapuzha Bridge</data>
+      <data key="d1">10.076</data>
+      <data key="d2">76.275</data>
+      <data key="d3">Z02</data>
+    </node>
+    <node id="N_EDAPPALLY_TOLL">
+      <data key="d0">Edappally Toll / LuLu Junction</data>
+      <data key="d1">10.026</data>
+      <data key="d2">76.308</data>
+      <data key="d3">Z03</data>
+    </node>
+    <node id="N_KALOOR_STAD">
+      <data key="d0">Kaloor Stadium Junction</data>
+      <data key="d1">9.998</data>
+      <data key="d2">76.297</data>
+      <data key="d3">Z03</data>
+    </node>
+    <node id="N_EKM_SOUTH">
+      <data key="d0">Ernakulam South Railway Station</data>
+      <data key="d1">9.968</data>
+      <data key="d2">76.291</data>
+      <data key="d3">Z03</data>
+    </node>
+    <node id="N_MG_ROAD">
+      <data key="d0">MG Road / Shenoys Junction</data>
+      <data key="d1">9.978</data>
+      <data key="d2">76.282</data>
+      <data key="d3">Z03</data>
+    </node>
+    <node id="N_FORT_KOCHI">
+      <data key="d0">Fort Kochi Bus Stand</data>
+      <data key="d1">9.965</data>
+      <data key="d2">76.242</data>
+      <data key="d3">Z04</data>
+    </node>
+    <node id="N_MATTANCHERRY">
+      <data key="d0">Mattancherry Market</data>
+      <data key="d1">9.957</data>
+      <data key="d2">76.255</data>
+      <data key="d3">Z04</data>
+    </node>
+    <node id="N_KALAMASSERY">
+      <data key="d0">Kalamassery Metro Junction</data>
+      <data key="d1">10.053</data>
+      <data key="d2">76.321</data>
+      <data key="d3">Z05</data>
+    </node>
+    <node id="N_CUSAT_JN">
+      <data key="d0">CUSAT University Gate</data>
+      <data key="d1">10.045</data>
+      <data key="d2">76.327</data>
+      <data key="d3">Z05</data>
+    </node>
+    <node id="N_CONTAINER_RD">
+      <data key="d0">Container Terminal Highway</data>
+      <data key="d1">10.04</data>
+      <data key="d2">76.268</data>
+      <data key="d3">Z05</data>
+    </node>
+    <node id="N_PERUMBAVOOR">
+      <data key="d0">Perumbavoor Town Centre</data>
+      <data key="d1">10.111</data>
+      <data key="d2">76.478</data>
+      <data key="d3">Z06</data>
+    </node>
+    <node id="N_KALADY_BR">
+      <data key="d0">Kalady Bridge (Periyar)</data>
+      <data key="d1">10.165</data>
+      <data key="d2">76.438</data>
+      <data key="d3">Z06</data>
+    </node>
+    <node id="N_MUVATTUPUZHA">
+      <data key="d0">Muvattupuzha Kacherithazham</data>
+      <data key="d1">9.983</data>
+      <data key="d2">76.58</data>
+      <data key="d3">Z07</data>
+    </node>
+    <node id="N_KOTHAMANGALAM">
+      <data key="d0">Kothamangalam Town</data>
+      <data key="d1">10.062</data>
+      <data key="d2">76.632</data>
+      <data key="d3">Z08</data>
+    </node>
+    <node id="N_ANGAMALY_TOWN">
+      <data key="d0">Angamaly KSRTC Centre</data>
+      <data key="d1">10.196</data>
+      <data key="d2">76.386</data>
+      <data key="d3">Z09</data>
+    </node>
+    <node id="N_CIAL_AIRPORT">
+      <data key="d0">Cochin International Airport (CIAL)</data>
+      <data key="d1">10.152</data>
+      <data key="d2">76.392</data>
+      <data key="d3">Z09</data>
+    </node>
+    <node id="N_TRIPUNITHURA">
+      <data key="d0">Tripunithura Statue Junction</data>
+      <data key="d1">9.948</data>
+      <data key="d2">76.348</data>
+      <data key="d3">Z10</data>
+    </node>
+    <node id="N_KAKKANAD_INFO">
+      <data key="d0">Infopark Kakkanad Expressway</data>
+      <data key="d1">10.012</data>
+      <data key="d2">76.363</data>
+      <data key="d3">Z03</data>
+    </node>
+    <edge source="N_ALUVA_RSTN" target="N_ALUVA_MANAP">
+      <data key="d4">Aluva Ghat Road</data>
+      <data key="d5">863.0</data>
+      <data key="d6">Z01</data>
+    </edge>
+    <edge source="N_ALUVA_RSTN" target="N_ALUVA_BANKJN">
+      <data key="d4">Aluva Bank Road</data>
+      <data key="d5">550.5</data>
+      <data key="d6">Z01</data>
+    </edge>
+    <edge source="N_ALUVA_RSTN" target="N_CIAL_AIRPORT">
+      <data key="d4">Airport Seaport VIP Expressway</data>
+      <data key="d5">6493.2</data>
+      <data key="d6">Z09</data>
+    </edge>
+    <edge source="N_ALUVA_MANAP" target="N_PARAVUR_JN">
+      <data key="d4">Aluva-Paravur Coastal Road</data>
+      <data key="d5">13368.5</data>
+      <data key="d6">Z01</data>
+    </edge>
+    <edge source="N_ALUVA_BANKJN" target="N_KALAMASSERY">
+      <data key="d4">NH 544 Aluva-Kalamassery</data>
+      <data key="d5">6997.6</data>
+      <data key="d6">Z01</data>
+    </edge>
+    <edge source="N_ALUVA_BANKJN" target="N_ANGAMALY_TOWN">
+      <data key="d4">NH 544 Aluva-Angamaly Main Arterial</data>
+      <data key="d5">10604.9</data>
+      <data key="d6">Z01</data>
+    </edge>
+    <edge source="N_ALUVA_BANKJN" target="N_PERUMBAVOOR">
+      <data key="d4">AM Road (Aluva-Munnar Corridor)</data>
+      <data key="d5">13262.5</data>
+      <data key="d6">Z01</data>
+    </edge>
+    <edge source="N_PARAVUR_JN" target="N_VARAPUZHA_BR">
+      <data key="d4">NH 66 Paravur-Varapuzha Link</data>
+      <data key="d5">9117.7</data>
+      <data key="d6">Z02</data>
+    </edge>
+    <edge source="N_VARAPUZHA_BR" target="N_CONTAINER_RD">
+      <data key="d4">Varapuzha Container Link</data>
+      <data key="d5">4075.7</data>
+      <data key="d6">Z02</data>
+    </edge>
+    <edge source="N_EDAPPALLY_TOLL" target="N_CUSAT_JN">
+      <data key="d4">NH 544 Edappally Stretch</data>
+      <data key="d5">2965.0</data>
+      <data key="d6">Z03</data>
+    </edge>
+    <edge source="N_EDAPPALLY_TOLL" target="N_KALOOR_STAD">
+      <data key="d4">Kaloor-Edappally Road</data>
+      <data key="d5">3338.3</data>
+      <data key="d6">Z03</data>
+    </edge>
+    <edge source="N_EDAPPALLY_TOLL" target="N_KAKKANAD_INFO">
+      <data key="d4">Civil Station Kakkanad Road</data>
+      <data key="d5">6220.4</data>
+      <data key="d6">Z03</data>
+    </edge>
+    <edge source="N_EDAPPALLY_TOLL" target="N_CONTAINER_RD">
+      <data key="d4">Container Terminal Expressway</data>
+      <data key="d5">4648.2</data>
+      <data key="d6">Z05</data>
+    </edge>
+    <edge source="N_KALOOR_STAD" target="N_MG_ROAD">
+      <data key="d4">Banerji Road</data>
+      <data key="d5">2764.8</data>
+      <data key="d6">Z03</data>
+    </edge>
+    <edge source="N_EKM_SOUTH" target="N_MG_ROAD">
+      <data key="d4">MG Road Commercial Corridor</data>
+      <data key="d5">1485.9</data>
+      <data key="d6">Z03</data>
+    </edge>
+    <edge source="N_EKM_SOUTH" target="N_TRIPUNITHURA">
+      <data key="d4">SA Road - Pettah Link</data>
+      <data key="d5">6626.9</data>
+      <data key="d6">Z10</data>
+    </edge>
+    <edge source="N_MG_ROAD" target="N_FORT_KOCHI">
+      <data key="d4">Willingdon Island - Thoppumpady Bridge</data>
+      <data key="d5">4612.9</data>
+      <data key="d6">Z04</data>
+    </edge>
+    <edge source="N_FORT_KOCHI" target="N_MATTANCHERRY">
+      <data key="d4">Bazar Road Historical Link</data>
+      <data key="d5">1678.8</data>
+      <data key="d6">Z04</data>
+    </edge>
+    <edge source="N_MATTANCHERRY" target="N_TRIPUNITHURA">
+      <data key="d4">Kundannoor - Maradu Link</data>
+      <data key="d5">10234.6</data>
+      <data key="d6">Z10</data>
+    </edge>
+    <edge source="N_KALAMASSERY" target="N_CUSAT_JN">
+      <data key="d4">Kalamassery Highway</data>
+      <data key="d5">1105.8</data>
+      <data key="d6">Z05</data>
+    </edge>
+    <edge source="N_KALAMASSERY" target="N_KAKKANAD_INFO">
+      <data key="d4">Seaport-Airport Road North</data>
+      <data key="d5">6475.6</data>
+      <data key="d6">Z05</data>
+    </edge>
+    <edge source="N_PERUMBAVOOR" target="N_KALADY_BR">
+      <data key="d4">MC Road Kalady-Perumbavoor Bridge</data>
+      <data key="d5">7431.3</data>
+      <data key="d6">Z06</data>
+    </edge>
+    <edge source="N_PERUMBAVOOR" target="N_MUVATTUPUZHA">
+      <data key="d4">MC Road Perumbavoor-Muvattupuzha</data>
+      <data key="d5">18091.4</data>
+      <data key="d6">Z06</data>
+    </edge>
+    <edge source="N_PERUMBAVOOR" target="N_KOTHAMANGALAM">
+      <data key="d4">Aluva-Munnar Road via Kothamangalam</data>
+      <data key="d5">17717.9</data>
+      <data key="d6">Z06</data>
+    </edge>
+    <edge source="N_KALADY_BR" target="N_ANGAMALY_TOWN">
+      <data key="d4">MC Road Angamaly-Kalady</data>
+      <data key="d5">6653.6</data>
+      <data key="d6">Z09</data>
+    </edge>
+    <edge source="N_MUVATTUPUZHA" target="N_KOTHAMANGALAM">
+      <data key="d4">Muvattupuzha-Kothamangalam Link Highway</data>
+      <data key="d5">10468.3</data>
+      <data key="d6">Z07</data>
+    </edge>
+    <edge source="N_MUVATTUPUZHA" target="N_TRIPUNITHURA">
+      <data key="d4">Kochi-Madurai NH 85 Extension</data>
+      <data key="d5">25704.3</data>
+      <data key="d6">Z07</data>
+    </edge>
+    <edge source="N_ANGAMALY_TOWN" target="N_CIAL_AIRPORT">
+      <data key="d4">Airport North Approach Road</data>
+      <data key="d5">4936.4</data>
+      <data key="d6">Z09</data>
+    </edge>
+    <edge source="N_TRIPUNITHURA" target="N_KAKKANAD_INFO">
+      <data key="d4">Seaport-Airport Road South</data>
+      <data key="d5">7303.6</data>
+      <data key="d6">Z10</data>
+    </edge>
+  </graph>
+</graphml>
