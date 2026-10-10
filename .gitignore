@@ -12,3 +12,5 @@
 !backend/ml_models.py
 !backend/risk_engine.py
 !backend/routing.py
+!frontend/
+!frontend/app.js
