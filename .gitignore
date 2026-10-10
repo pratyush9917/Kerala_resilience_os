@@ -14,3 +14,5 @@
 !backend/routing.py
 !frontend/
 !frontend/app.js
+!frontend/index.html
+!frontend/style.css

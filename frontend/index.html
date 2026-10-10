@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kerala Resilience OS | Flood Emergency Command Center</title>
+  <meta name="description" content="AI-assisted flood emergency command center and decision-support system for Ernakulam district, Kerala.">
+
+  <!-- Google Fonts: Inter & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Leaflet.js CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+
+  <!-- App Custom Stylesheet -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="command-center-body">
+  <!-- Top Navigation / Strategic Header -->
+  <header class="app-header">
+    <div class="header-left">
+      <div class="brand-badge">
+        <span class="pulse-indicator"></span>
+        <span class="brand-title">KERALA RESILIENCE OS</span>
+      </div>
+      <span class="header-divider">|</span>
+      <div class="header-subtitle">
+        <span class="jurisdiction">ERNAKULAM DISTRICT COMMAND CENTER</span>
+        <span class="version-tag">DECISION-SUPPORT SYSTEM v1.0</span>
+      </div>
+    </div>
+
+    <!-- Mode Selector Tabs -->
+    <div class="header-center">
+      <nav class="nav-tabs" role="tablist">
+        <button id="tabCommandBtn" class="nav-tab active" role="tab" aria-selected="true" onclick="switchView('command')">
+          <span class="tab-icon">🛡️</span> District Command View
+        </button>
+        <button id="tabCitizenBtn" class="nav-tab" role="tab" aria-selected="false" onclick="switchView('citizen')">
+          <span class="tab-icon">🧭</span> Citizen Safe Evacuation Route
+        </button>
+      </nav>
+    </div>
+
+    <div class="header-right">
+      <div class="live-clock-card">
+        <span class="clock-label">IST MONSOON TIME</span>
+        <span id="liveClock" class="clock-time">--:--:--</span>
+      </div>
+      <div id="backendStatusBadge" class="status-badge connected">
+        <span class="status-dot"></span>
+        <span id="statusText">CHECKING ENGINE...</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Grid Dashboard Layout -->
+  <main class="dashboard-container">
+    
+    <!-- LEFT PANEL: Simulation Controls & Flood Parameters -->
+    <aside class="panel left-panel" id="leftControlPanel">
+      <div class="panel-header">
+        <div class="panel-title-wrap">
+          <span class="panel-icon">⚙️</span>
+          <h2>SIMULATION ENGINE</h2>
+        </div>
+        <span class="badge-mini">STAGE A & B</span>
+      </div>
+
+      <div class="panel-scroll-content">
+        <!-- Preset Scenario Quick Buttons -->
+        <div class="control-group">
+          <label class="control-label">HISTORICAL & ALERT PRESETS</label>
+          <div class="preset-grid">
+            <button class="preset-btn severe" onclick="applyPreset('2018')">
+              <span class="preset-name">2018 Great Flood</span>
+              <span class="preset-detail">750mm · 12.0m</span>
+            </button>
+            <button class="preset-btn alert" onclick="applyPreset('flash')">
+              <span class="preset-name">Flash Flood Alert</span>
+              <span class="preset-detail">450mm · 8.5m</span>
+            </button>
+            <button class="preset-btn normal" onclick="applyPreset('monsoon')">
+              <span class="preset-name">Normal Monsoon</span>
+              <span class="preset-detail">120mm · 3.5m</span>
+            </button>
+            <button class="preset-btn dry" onclick="applyPreset('dry')">
+              <span class="preset-name">Baseline / Dry</span>
+              <span class="preset-detail">15mm · 1.2m</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Slider 1: Rainfall (mm) -->
+        <div class="control-group slider-group">
+          <div class="slider-header">
+            <label for="rainSlider" class="control-label">
+              <span>RAINFALL INTENSITY</span>
+              <span class="unit-tag">(mm / 24h)</span>
+            </label>
+            <span id="rainValDisplay" class="slider-numeric-badge">250 mm</span>
+          </div>
+          <input type="range" id="rainSlider" min="0" max="1000" value="250" step="5" class="custom-range" oninput="updateRainDisplay(this.value)">
+          <div class="slider-ticks">
+            <span>0</span>
+            <span>250</span>
+            <span>500</span>
+            <span>750</span>
+            <span>1000</span>
+          </div>
+          <div class="intensity-indicator" id="rainIntensityPill">
+            <span class="intensity-label">Heavy Rainfall Warning</span>
+          </div>
+        </div>
+
+        <!-- Slider 2: River Level (m) -->
+        <div class="control-group slider-group">
+          <div class="slider-header">
+            <label for="riverSlider" class="control-label">
+              <span>PERIYAR RIVER LEVEL</span>
+              <span class="unit-tag">(m at Aluva Gauge)</span>
+            </label>
+            <span id="riverValDisplay" class="slider-numeric-badge">6.0 m</span>
+          </div>
+          <input type="range" id="riverSlider" min="0" max="15" value="6.0" step="0.1" class="custom-range" oninput="updateRiverDisplay(this.value)">
+          <div class="slider-ticks">
+            <span>0m</span>
+            <span>4m (Alert)</span>
+            <span>8m (Danger)</span>
+            <span>12m</span>
+            <span>15m</span>
+          </div>
+          <div class="intensity-indicator" id="riverIntensityPill">
+            <span class="intensity-label">High Flow - Approaching Flood Stage</span>
+          </div>
+        </div>
+
+        <!-- Action Button: Run Simulation -->
+        <div class="simulation-action-wrap">
+          <button id="run" class="btn-run-simulation" onclick="runSimulation()">
+            <span class="btn-shine"></span>
+            <span class="btn-icon">⚡</span>
+            <span id="runBtnText">RUN SIMULATION</span>
+          </button>
+          <div class="auto-sim-toggle">
+            <input type="checkbox" id="autoSimCheckbox" onchange="toggleAutoSim(this.checked)">
+            <label for="autoSimCheckbox">Continuous Live Recompute</label>
+          </div>
+        </div>
+
+        <!-- Map Layer Visibility Toggles -->
+        <div class="control-group">
+          <label class="control-label">MAP LAYER FILTERS</label>
+          <div class="filter-toggle-list">
+            <label class="filter-checkbox-label">
+              <input type="checkbox" id="layerZonesToggle" checked onchange="toggleMapLayer('zones', this.checked)">
+              <span class="filter-custom-check"></span>
+              <span>Taluk Risk Polygons</span>
+            </label>
+            <label class="filter-checkbox-label">
+              <input type="checkbox" id="layerHospitalsToggle" checked onchange="toggleMapLayer('hospitals', this.checked)">
+              <span class="filter-custom-check"></span>
+              <span>Critical Hospitals</span>
+            </label>
+            <label class="filter-checkbox-label">
+              <input type="checkbox" id="layerSchoolsToggle" checked onchange="toggleMapLayer('schools', this.checked)">
+              <span class="filter-custom-check"></span>
+              <span>Shelters & Relief Camps</span>
+            </label>
+            <label class="filter-checkbox-label">
+              <input type="checkbox" id="layerFloodedRoadsToggle" checked onchange="toggleMapLayer('roads', this.checked)">
+              <span class="filter-custom-check"></span>
+              <span>Inundated Road Links</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Risk Legend -->
+        <div class="control-group legend-group">
+          <label class="control-label">FLOOD HAZARD CLASSIFICATION</label>
+          <div class="legend-scale">
+            <div class="legend-item low">
+              <span class="legend-color-box"></span>
+              <div class="legend-text">
+                <span class="legend-class-name">LOW</span>
+                <span class="legend-range">&lt; 0.35</span>
+              </div>
+            </div>
+            <div class="legend-item medium">
+              <span class="legend-color-box"></span>
+              <div class="legend-text">
+                <span class="legend-class-name">MEDIUM</span>
+                <span class="legend-range">0.35 - 0.54</span>
+              </div>
+            </div>
+            <div class="legend-item high">
+              <span class="legend-color-box"></span>
+              <div class="legend-text">
+                <span class="legend-class-name">HIGH</span>
+                <span class="legend-range">0.55 - 0.74</span>
+              </div>
+            </div>
+            <div class="legend-item critical">
+              <span class="legend-color-box"></span>
+              <div class="legend-text">
+                <span class="legend-class-name">CRITICAL</span>
+                <span class="legend-range">&ge; 0.75</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Factor Weight Explanation Accordion -->
+        <div class="weights-explanation-card">
+          <div class="weights-header" onclick="toggleWeightsInfo()">
+            <span>📐 Explainable Hybrid Model Weights</span>
+            <span id="weightsChevron" class="chevron">▼</span>
+          </div>
+          <div id="weightsContent" class="weights-content hidden">
+            <div class="weight-row"><span>Rainfall Hazard:</span> <b>28%</b></div>
+            <div class="weight-row"><span>River Level × Proximity:</span> <b>20%</b></div>
+            <div class="weight-row"><span>2018 Historical Severity:</span> <b>20%</b></div>
+            <div class="weight-row"><span>Low Elevation Vulnerability:</span> <b>14%</b></div>
+            <div class="weight-row"><span>Terrain Topography:</span> <b>8%</b></div>
+            <div class="weight-row"><span>Road Network Inundation:</span> <b>5%</b></div>
+            <div class="weight-row"><span>Periyar/Muvattupuzha River:</span> <b>5%</b></div>
+            <div class="model-note">Refined via Gradient Boosting Regressor (R² = 0.98)</div>
+          </div>
+        </div>
+
+      </div>
+    </aside>
+
+    <!-- CENTER AREA: Interactive Map & Citizen Route Planner -->
+    <section class="panel center-panel" id="centerMapPanel">
+      
+      <!-- CITIZEN ROUTE CONTROLS OVERLAY (Shown in Citizen Tab or Toggle) -->
+      <div id="citizenRouteCard" class="citizen-route-card hidden">
+        <div class="citizen-card-header">
+          <div class="citizen-header-title">
+            <span class="citizen-icon">🧭</span>
+            <div>
+              <h3>CITIZEN SAFE EVACUATION ROUTING</h3>
+              <p>Risk-weighted A* pathfinding avoiding submerged bridges & critical zones</p>
+            </div>
+          </div>
+          <button class="btn-close-citizen" onclick="switchView('command')" title="Close Citizen Routing">✕</button>
+        </div>
+
+        <div class="citizen-inputs-grid">
+          <div class="route-input-group">
+            <label for="routeOriginSelect">📍 ORIGIN LOCATION (START)</label>
+            <select id="routeOriginSelect" class="custom-select" onchange="onOriginSelectChange()">
+              <option value="N_ALUVA_RSTN">Aluva Railway Station (Z01)</option>
+              <option value="N_CIAL_AIRPORT">Cochin International Airport (CIAL) (Z09)</option>
+              <option value="N_PARAVUR_JN">North Paravur Town (Z02)</option>
+              <option value="N_KALAMASSERY">Kalamassery Metro Station (Z05)</option>
+              <option value="N_PERUMBAVOOR">Perumbavoor Town Centre (Z06)</option>
+              <option value="N_KAKKANAD_INFO">Infopark Kakkanad (Z03)</option>
+              <option value="N_EKM_SOUTH" selected>Ernakulam South Railway Station (Z03)</option>
+              <option value="N_FORT_KOCHI">Fort Kochi Bus Stand (Z04)</option>
+              <option value="N_MUVATTUPUZHA">Muvattupuzha Kacherithazham (Z07)</option>
+            </select>
+            <button class="btn-map-picker" id="pickOriginMapBtn" onclick="enableMapPick('origin')">📌 Click Map</button>
+          </div>
+
+          <div class="route-swap-wrap">
+            <button class="btn-swap-route" onclick="swapRouteEndpoints()" title="Swap Origin & Destination">⇄</button>
+          </div>
+
+          <div class="route-input-group">
+            <label for="routeDestSelect">🏁 SAFE DESTINATION (TARGET)</label>
+            <select id="routeDestSelect" class="custom-select" onchange="onDestSelectChange()">
+              <option value="N_ALUVA_RSTN" selected>Aluva Railway Station (Z01)</option>
+              <option value="N_CIAL_AIRPORT">Cochin International Airport (CIAL) (Z09)</option>
+              <option value="N_PARAVUR_JN">North Paravur Town (Z02)</option>
+              <option value="N_KALAMASSERY">Kalamassery Metro Station (Z05)</option>
+              <option value="N_PERUMBAVOOR">Perumbavoor Town Centre (Z06)</option>
+              <option value="N_KAKKANAD_INFO">Infopark Kakkanad (Z03)</option>
+              <option value="N_EKM_SOUTH">Ernakulam South Railway Station (Z03)</option>
+              <option value="N_FORT_KOCHI">Fort Kochi Bus Stand (Z04)</option>
+              <option value="N_KOTHAMANGALAM">Kothamangalam Foothills (Z08)</option>
+            </select>
+            <button class="btn-map-picker" id="pickDestMapBtn" onclick="enableMapPick('dest')">📌 Click Map</button>
+          </div>
+
+          <div class="route-action-wrap">
+            <button id="computeRouteBtn" class="btn-compute-route" onclick="fetchRoute()">
+              <span>FIND SAFEST ROUTE</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Route Comparison Trade-off Box -->
+        <div id="routeTradeoffCard" class="route-tradeoff-card hidden">
+          <div class="tradeoff-badges">
+            <div class="tradeoff-badge safe">
+              <span class="route-legend-line blue-solid"></span>
+              <span class="route-type-title">SAFEST ROUTE</span>
+              <span id="safeDistText" class="route-stat-val">-- km</span>
+              <span class="route-status-tag safe-tag">PASSABLE</span>
+            </div>
+            <div class="tradeoff-badge short">
+              <span class="route-legend-line grey-dashed"></span>
+              <span class="route-type-title">SHORTEST ROUTE</span>
+              <span id="shortDistText" class="route-stat-val">-- km</span>
+              <span id="shortStatusTag" class="route-status-tag warning-tag">FLOODED</span>
+            </div>
+            <div class="tradeoff-badge metrics">
+              <div class="stat-mini">
+                <span class="label">Extra Distance:</span>
+                <span id="diffKmText" class="val">+0.0 km</span>
+              </div>
+              <div class="stat-mini">
+                <span class="label">Blocked Links Avoided:</span>
+                <span id="avoidedChokepointsText" class="val highlight">0 Chokepoints</span>
+              </div>
+            </div>
+          </div>
+          <div id="routeNoticeText" class="route-notice-text">
+            Safest route circumvents inundated low-lying causeways along the Periyar basin.
+          </div>
+        </div>
+      </div>
+
+      <!-- Leaflet Map Container -->
+      <div id="map" class="map-viewport"></div>
+
+      <!-- Floating Map Controls / Inspection Overlay -->
+      <div class="map-floating-overlay">
+        <button class="map-quick-btn" onclick="resetMapCenter()" title="Center on Ernakulam District">
+          🎯 Ernakulam View
+        </button>
+        <button class="map-quick-btn" onclick="toggleHospitalLayers()" title="Toggle Hospital Markers">
+          🏥 Hospitals
+        </button>
+        <button class="map-quick-btn" onclick="toggleShelterLayers()" title="Toggle Relief Shelters">
+          🏫 Shelters
+        </button>
+      </div>
+
+      <!-- Clicked Zone Quick Inspector Bar -->
+      <div id="zoneInspectorBar" class="zone-inspector-bar hidden">
+        <div class="inspector-content">
+          <span class="inspector-zone-title" id="inspectorZoneName">Aluva</span>
+          <span class="inspector-pill" id="inspectorRiskPill">CRITICAL (0.88)</span>
+          <span class="inspector-stat">Elevation: <b id="inspectorElev">8m</b></span>
+          <span class="inspector-stat">River Proximity: <b id="inspectorProx">98%</b></span>
+          <span class="inspector-stat">Hospitals: <b id="inspectorHosps">6</b></span>
+          <span class="inspector-stat">Schools/Camps: <b id="inspectorSchools">16</b></span>
+        </div>
+        <button class="inspector-close" onclick="closeInspector()">✕</button>
+      </div>
+
+    </section>
+
+    <!-- RIGHT PANEL: Impact Analysis KPIs & Prioritized Action Plan -->
+    <aside class="panel right-panel" id="rightActionPanel">
+      <div class="panel-header">
+        <div class="panel-title-wrap">
+          <span class="panel-icon">📋</span>
+          <h2>IMPACT & ACTION PLAN</h2>
+        </div>
+        <span class="badge-mini" id="actionCountBadge">0 ACTIONS</span>
+      </div>
+
+      <div class="panel-scroll-content">
+        <!-- Impact Metrics KPI Cards Grid -->
+        <div class="impact-cards-grid">
+          <div class="kpi-card danger">
+            <div class="kpi-icon-wrap">🏥</div>
+            <div class="kpi-data">
+              <span class="kpi-val" id="threatenedHospCount">0</span>
+              <span class="kpi-title">Threatened Hospitals</span>
+              <span class="kpi-subtitle" id="threatenedBedsText">0 ICU / Inpatient Beds</span>
+            </div>
+          </div>
+
+          <div class="kpi-card warning">
+            <div class="kpi-icon-wrap">🏫</div>
+            <div class="kpi-data">
+              <span class="kpi-val" id="impactedSchoolsCount">0</span>
+              <span class="kpi-title">Impacted Schools / Camps</span>
+              <span class="kpi-subtitle" id="shelterCapacityText">Capacity: 0 Persons</span>
+            </div>
+          </div>
+
+          <div class="kpi-card hazard">
+            <div class="kpi-icon-wrap">🚧</div>
+            <div class="kpi-data">
+              <span class="kpi-val" id="affectedRoadsCount">0</span>
+              <span class="kpi-title">Inundated Road Links</span>
+              <span class="kpi-subtitle" id="criticalRoadsText">Critical Corridors Blocked</span>
+            </div>
+          </div>
+
+          <div class="kpi-card critical-zones">
+            <div class="kpi-icon-wrap">🌊</div>
+            <div class="kpi-data">
+              <span class="kpi-val" id="criticalZonesCount">0</span>
+              <span class="kpi-title">Critical Taluk Zones</span>
+              <span class="kpi-subtitle" id="highZonesCountText">0 High Risk Zones</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Prioritized Action Plan Title & Filter -->
+        <div class="action-plan-section-header">
+          <div class="plan-title-block">
+            <h3>PRIORITISED ACTION PLAN</h3>
+            <p>Ranked by Priority = Action Probability × Zone Risk Score</p>
+          </div>
+        </div>
+
+        <!-- Dynamic Action Plan List -->
+        <div id="actionPlanList" class="action-cards-container">
+          <!-- Rendered dynamically by JavaScript -->
+          <div class="plan-placeholder">
+            <span class="placeholder-icon">⏳</span>
+            <p>Click <b>Run Simulation</b> to generate prioritized emergency actions.</p>
+          </div>
+        </div>
+
+      </div>
+    </aside>
+
+    <!-- BOTTOM PANEL: Chart.js Visualizations & Factor Breakdown -->
+    <footer class="panel bottom-panel" id="bottomChartPanel">
+      <div class="bottom-panel-header">
+        <div class="chart-tab-bar">
+          <button class="chart-tab-btn active" id="chartTabZoneRisk" onclick="switchChartTab('risk')">
+            📊 Zone Risk Score Comparison (All 10 Taluks)
+          </button>
+          <button class="chart-tab-btn" id="chartTabFactor" onclick="switchChartTab('factors')">
+            🔬 Explainable Contributing Factors Breakdown
+          </button>
+          <button class="chart-tab-btn" id="chartTabDistribution" onclick="switchChartTab('dist')">
+            🍩 Risk Classification Distribution
+          </button>
+        </div>
+        <div class="bottom-header-tools">
+          <span class="chart-sub-note">Model: Gradient Boosting Regressor + Random Forest Multi-Label</span>
+        </div>
+      </div>
+
+      <div class="bottom-chart-wrapper">
+        <canvas id="riskChart"></canvas>
+      </div>
+    </footer>
+
+  </main>
+
+  <!-- Interactive Action Toast Notification -->
+  <div id="toastNotification" class="toast-popup hidden">
+    <span id="toastIcon">🔔</span>
+    <span id="toastMessage">Emergency order dispatched to field responders.</span>
+  </div>
+
+  <!-- Third-Party CDNs: Leaflet.js & Chart.js -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+
+  <!-- Application Logic -->
+  <script src="app.js"></script>
+</body>
+</html>
