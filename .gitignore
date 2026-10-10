@@ -4,4 +4,4 @@
 !data/raw/
 !data/raw/**
 !README.md
-!backend\action_planner.py
+!backend\config.py
