@@ -4,4 +4,5 @@
 !data/raw/
 !data/raw/**
 !README.md
+!backend/
 !backend/config.py
