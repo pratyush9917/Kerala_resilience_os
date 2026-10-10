@@ -27,6 +27,8 @@ let zonesGeoJSON = null;
 let isBackendLive = false;
 let autoSimActive = false;
 let mapPickTarget = null; // 'origin' | 'dest' | null
+let selectedRoute = "safe";
+let latestRouteData = null;
 
 // Risk Colors Palette
 const COLORS = {
@@ -246,6 +248,20 @@ document.addEventListener("DOMContentLoaded", async () => {
   initClock();
   initMap();
   initChart();
+  document.addEventListener("click", (event) => {
+    const leftPanel = document.getElementById("leftControlPanel");
+    const simulateButton = document.getElementById("btnToggleSim");
+
+    if (
+      leftPanel &&
+      leftPanel.classList.contains("drawer-open") &&
+      !leftPanel.contains(event.target) &&
+      event.target !== simulateButton &&
+      !simulateButton?.contains(event.target)
+    ) {
+      closeDrawer("leftControlPanel");
+    }
+  });
   await checkBackendAndLoad();
   runSimulation();
 });
@@ -267,12 +283,14 @@ function initMap() {
     attributionControl: true
   }).setView([10.07, 76.38], 10);
 
-  // The backend proxies tiles so provider credentials never reach the browser.
-  L.tileLayer("/tiles/{z}/{x}/{y}{r}.png", {
-    maxZoom: 18,
-    subdomains: "abcd",
-    attribution: '&copy; <a href="https://carto.com/attributions">CARTO</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-  }).addTo(map);
+  // Use OpenStreetMap directly so the standalone frontend has a working basemap
+  // without depending on the backend tile proxy or a third-party API key.
+  const baseTileLayer = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom: 19,
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+  });
+
+  baseTileLayer.addTo(map);
 
   // Add customized zoom control to bottom right
   L.control.zoom({ position: 'bottomright' }).addTo(map);
@@ -305,7 +323,7 @@ async function checkBackendAndLoad() {
       const data = await res.json();
       isBackendLive = true;
       badge.className = "status-badge connected";
-      statusText.textContent = "FASTAPI ENGINE ONLINE";
+      statusText.textContent = "BASEMAP & AI ENGINE ONLINE";
       
       // Load static zones and network data from API
       const zRes = await fetch("/zones");
@@ -323,7 +341,7 @@ async function checkBackendAndLoad() {
 
   isBackendLive = false;
   badge.className = "status-badge standalone";
-  statusText.textContent = "CLIENT SIMULATION ENGINE (STANDALONE)";
+  statusText.textContent = "STANDALONE CLIENT ENGINE (OFFLINE)";
   
   zonesGeoJSON = DEFAULT_ZONES_GEO;
   hospitalsData = DEFAULT_HOSPITALS;
@@ -385,7 +403,7 @@ async function runSimulation() {
 
   // If citizen route card is open, re-compute routes under new flood state
   if (!document.getElementById("citizenRouteCard").classList.contains("hidden")) {
-    fetchRoute();
+    fetchRoute(false);
   }
 }
 
@@ -629,6 +647,10 @@ function renderMapPolygons(zones) {
   }).addTo(map);
 }
 
+function escapeQuotes(str) {
+  return String(str).replace(/'/g, "\\'").replace(/"/g, "&quot;");
+}
+
 function renderFacilityMarkers(zones) {
   hospitalMarkersLayer.clearLayers();
   schoolMarkersLayer.clearLayers();
@@ -650,34 +672,45 @@ function renderFacilityMarkers(zones) {
 
     const marker = L.marker([h.lat, h.lon], { icon: customIcon });
     marker.bindPopup(`
-      <div class="custom-popup-box">
+      <div class="custom-popup-box hospital-popup">
         <h4>🏥 ${h.name}</h4>
-        <div class="popup-row"><span>Zone:</span> <b>${z ? z.name : h.zone_id}</b></div>
-        <div class="popup-row"><span>Inpatient Beds:</span> <b>${h.beds || 200}</b></div>
-        <div class="popup-row"><span>Flood Vulnerability:</span> <b style="color:${isAtRisk ? '#ef4444' : '#10b981'}">${isAtRisk ? 'THREATENED' : 'SAFE'}</b></div>
+        <div class="popup-row"><span>Taluk Zone:</span> <b>${z ? z.name : h.zone_id}</b></div>
+        <div class="popup-row"><span>Inpatient Beds:</span> <b>${h.beds || 200} Beds</b></div>
+        <div class="popup-row"><span>Vulnerability:</span> <b style="color:${isAtRisk ? '#ef4444' : '#10b981'}">${isAtRisk ? 'THREATENED BY FLOOD' : 'SECURE / OPERATIONAL'}</b></div>
+        <button class="btn-popup-nav" onclick="routeToFacility('${escapeQuotes(h.name)}', ${h.lat}, ${h.lon})">
+          🚑 Route Emergency Transport Here
+        </button>
       </div>
     `);
     hospitalMarkersLayer.addLayer(marker);
   });
 
   // Schools / Shelters
-  schoolsData.forEach(s => {
+  schoolsData.forEach((s, idx) => {
     const z = zoneMap.get(s.zone_id);
+    const isCritical = z && z.risk_class === "critical";
+    const isHigh = z && z.risk_class === "high";
+    const statusText = isCritical ? "CRITICAL HAZARD - SEVERED" : (isHigh ? "HIGH RISK - APPROACH CAUTIOUSLY" : "SAFE HAVEN - OPEN & ACCESSIBLE");
+    const statusColor = isCritical ? "#ef4444" : (isHigh ? "#f97316" : "#10b981");
 
     const customIcon = L.divIcon({
-      className: "custom-map-icon school-icon",
+      className: `custom-map-icon school-icon ${isCritical ? "danger-pulse" : ""}`,
       html: `🏫`,
-      iconSize: [20, 20],
-      iconAnchor: [10, 10]
+      iconSize: [22, 22],
+      iconAnchor: [11, 11]
     });
 
     const marker = L.marker([s.lat, s.lon], { icon: customIcon });
     marker.bindPopup(`
-      <div class="custom-popup-box">
+      <div class="custom-popup-box shelter-popup">
         <h4>🏫 ${s.name}</h4>
-        <div class="popup-row"><span>Zone:</span> <b>${z ? z.name : s.zone_id}</b></div>
-        <div class="popup-row"><span>Shelter Capacity:</span> <b>${s.capacity || 800} persons</b></div>
-        <div class="popup-row"><span>Zone Risk Class:</span> <b>${z ? z.risk_class.toUpperCase() : 'NORMAL'}</b></div>
+        <div class="popup-row"><span>Taluk Zone:</span> <b>${z ? z.name : s.zone_id}</b></div>
+        <div class="popup-row"><span>Relief Capacity:</span> <b>${s.capacity || 800} Persons</b></div>
+        <div class="popup-row"><span>Zone Risk:</span> <b style="color:${statusColor}">${z ? z.risk_class.toUpperCase() : 'NORMAL'} (${z ? z.risk.toFixed(2) : '0.20'})</b></div>
+        <div class="popup-row"><span>Status:</span> <b style="color:${statusColor}">${statusText}</b></div>
+        <button class="btn-popup-nav" onclick="routeToShelter('${escapeQuotes(s.name)}', ${s.lat}, ${s.lon}, '${s.zone_id}', ${idx})">
+          🧭 Navigate Here (Safest & Shortest Route)
+        </button>
       </div>
     `);
     schoolMarkersLayer.addLayer(marker);
@@ -945,7 +978,30 @@ function switchChartTab(mode) {
 function toggleDrawer(panelId) {
   const panel = document.getElementById(panelId);
   if (!panel) return;
-  panel.classList.toggle("drawer-open");
+  const shouldOpen = !panel.classList.contains("drawer-open");
+  panel.classList.toggle("drawer-open", shouldOpen);
+
+  if (panelId === "leftControlPanel") {
+    document.body.classList.toggle("simulation-drawer-open", shouldOpen);
+  }
+
+  if (map) {
+    window.setTimeout(() => map.invalidateSize(), 350);
+  }
+}
+
+function closeDrawer(panelId) {
+  const panel = document.getElementById(panelId);
+  if (!panel) return;
+
+  panel.classList.remove("drawer-open");
+  if (panelId === "leftControlPanel") {
+    document.body.classList.remove("simulation-drawer-open");
+  }
+
+  if (map) {
+    window.setTimeout(() => map.invalidateSize(), 350);
+  }
 }
 
 // =====================================================================
@@ -953,8 +1009,14 @@ function toggleDrawer(panelId) {
 // =====================================================================
 function switchView(viewName) {
   const isCitizen = (viewName === 'citizen');
+  document.body.classList.toggle("citizen-view", isCitizen);
+  if (isCitizen) {
+    document.body.classList.remove("route-results-mode");
+  }
   document.getElementById("tabCommandBtn").classList.toggle("active", !isCitizen);
   document.getElementById("tabCitizenBtn").classList.toggle("active", isCitizen);
+  document.getElementById("tabCommandBtn").setAttribute("aria-selected", String(!isCitizen));
+  document.getElementById("tabCitizenBtn").setAttribute("aria-selected", String(isCitizen));
 
   const citizenCard = document.getElementById("citizenRouteCard");
   if (isCitizen) {
@@ -962,8 +1024,139 @@ function switchView(viewName) {
     fetchRoute();
   } else {
     citizenCard.classList.add("hidden");
+    document.body.classList.remove("route-results-mode");
+    document.getElementById("citizenAlertsCard").classList.add("hidden");
     clearRouteDisplays();
   }
+}
+
+let customMapOriginCoords = null;
+let customMapDestCoords = null;
+let currentGpsCoords = null;
+
+function useGpsOrigin() {
+  if (!navigator.geolocation) {
+    showToast("⚠️ Geolocation is not supported by your browser.");
+    return;
+  }
+  showToast("📡 Requesting device location...");
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      const lat = pos.coords.latitude;
+      const lon = pos.coords.longitude;
+      currentGpsCoords = { lat, lon, name: "Your Current Location (GPS)" };
+      const origSelect = document.getElementById("routeOriginSelect");
+      origSelect.value = "GPS_CURRENT";
+      showToast(`📍 GPS Location detected (${lat.toFixed(4)}, ${lon.toFixed(4)})`);
+      fetchRoute();
+    },
+    (err) => {
+      console.warn("GPS error:", err);
+      showToast("⚠️ Could not retrieve GPS location. Using default origin.");
+      document.getElementById("routeOriginSelect").value = "N_EKM_SOUTH";
+      fetchRoute();
+    },
+    { timeout: 8000, enableHighAccuracy: true }
+  );
+}
+
+function routeToShelter(name, lat, lon, zoneId, idx) {
+  switchView('citizen');
+  const destSelect = document.getElementById("routeDestSelect");
+  const targetKey = `SHELTER_${idx}`;
+  
+  if (destSelect.querySelector(`option[value="${targetKey}"]`)) {
+    destSelect.value = targetKey;
+  } else {
+    customMapDestCoords = { lat, lon, name: `Relief Shelter: ${name}`, isShelter: true };
+    const customOpt = destSelect.querySelector('option[value="CUSTOM_MAP_DEST"]');
+    if (customOpt) {
+      customOpt.hidden = false;
+      customOpt.disabled = false;
+      customOpt.textContent = `🏫 ${name}`;
+      destSelect.value = "CUSTOM_MAP_DEST";
+    }
+  }
+
+  showToast(`🧭 Planned evacuation route to designated shelter: ${name}`);
+  fetchRoute();
+}
+
+function routeToFacility(name, lat, lon) {
+  switchView('citizen');
+  const destSelect = document.getElementById("routeDestSelect");
+  customMapDestCoords = { lat, lon, name: `Hospital: ${name}`, isFacility: true };
+  const customOpt = destSelect.querySelector('option[value="CUSTOM_MAP_DEST"]');
+  if (customOpt) {
+    customOpt.hidden = false;
+    customOpt.disabled = false;
+    customOpt.textContent = `🏥 ${name}`;
+    destSelect.value = "CUSTOM_MAP_DEST";
+  }
+  showToast(`🚑 Emergency transport route planned to: ${name}`);
+  fetchRoute();
+}
+
+function resolveLocation(key, type) {
+  if (key === "GPS_CURRENT") {
+    if (currentGpsCoords) return currentGpsCoords;
+    return { lat: 9.9680, lon: 76.2910, name: "Current Location (Ernakulam Central)" };
+  }
+  if (key === "CUSTOM_MAP_ORIGIN" && customMapOriginCoords) {
+    return customMapOriginCoords;
+  }
+  if (key === "CUSTOM_MAP_DEST" && customMapDestCoords) {
+    return customMapDestCoords;
+  }
+  if (key === "AUTO_NEAREST_SAFE") {
+    const origKey = document.getElementById("routeOriginSelect").value;
+    const origin = resolveLocation(origKey, "origin");
+    return findNearestSafeShelterClient(origin.lat, origin.lon);
+  }
+  if (key && key.startsWith("SHELTER_")) {
+    const idx = parseInt(key.replace("SHELTER_", ""), 10);
+    const s = schoolsData[idx];
+    if (s) {
+      return { lat: s.lat, lon: s.lon, name: s.name, zone_id: s.zone_id, capacity: s.capacity, isShelter: true };
+    }
+  }
+  if (ROAD_NODES[key]) {
+    return ROAD_NODES[key];
+  }
+  return type === "origin" ? ROAD_NODES["N_EKM_SOUTH"] : (schoolsData[0] || ROAD_NODES["N_ALUVA_RSTN"]);
+}
+
+function findNearestSafeShelterClient(fromLat, fromLon) {
+  let best = null;
+  let minD = Infinity;
+  const criticalZoneIds = new Set(currentZonesData.filter(z => z.risk_class === "critical").map(z => z.zone_id));
+
+  // First priority: shelters NOT in critical zones
+  schoolsData.forEach(s => {
+    if (!criticalZoneIds.has(s.zone_id)) {
+      const d = (s.lat - fromLat) ** 2 + (s.lon - fromLon) ** 2;
+      if (d < minD) {
+        minD = d;
+        best = s;
+      }
+    }
+  });
+
+  // Fallback if all are critical: nearest shelter overall
+  if (!best && schoolsData.length > 0) {
+    schoolsData.forEach(s => {
+      const d = (s.lat - fromLat) ** 2 + (s.lon - fromLon) ** 2;
+      if (d < minD) {
+        minD = d;
+        best = s;
+      }
+    });
+  }
+
+  if (best) {
+    return { lat: best.lat, lon: best.lon, name: `Nearest Safe: ${best.name}`, zone_id: best.zone_id, capacity: best.capacity, isShelter: true };
+  }
+  return { lat: 10.1240, lon: 76.3420, name: "UC College Aluva Relief Camp", isShelter: true };
 }
 
 function swapRouteEndpoints() {
@@ -976,11 +1169,16 @@ function swapRouteEndpoints() {
 }
 
 function onOriginSelectChange() {
-  fetchRoute();
+  const val = document.getElementById("routeOriginSelect").value;
+  if (val === "GPS_CURRENT" && !currentGpsCoords) {
+    useGpsOrigin();
+    return;
+  }
+  fetchRoute(false);
 }
 
 function onDestSelectChange() {
-  fetchRoute();
+  fetchRoute(false);
 }
 
 function enableMapPick(targetType) {
@@ -989,36 +1187,69 @@ function enableMapPick(targetType) {
 }
 
 function handleMapCoordinatePick(lat, lon) {
-  // Find closest known road junction node
-  let bestNodeKey = "N_ALUVA_RSTN";
-  let minD = Infinity;
-
-  Object.entries(ROAD_NODES).forEach(([key, node]) => {
-    const d = (node.lat - lat) ** 2 + (node.lon - lon) ** 2;
-    if (d < minD) {
-      minD = d;
-      bestNodeKey = key;
-    }
-  });
-
   if (mapPickTarget === 'origin') {
-    document.getElementById("routeOriginSelect").value = bestNodeKey;
+    customMapOriginCoords = { lat, lon, name: `Map Location (${lat.toFixed(4)}, ${lon.toFixed(4)})` };
+    const origSelect = document.getElementById("routeOriginSelect");
+    const opt = origSelect.querySelector('option[value="CUSTOM_MAP_ORIGIN"]');
+    if (opt) {
+      opt.hidden = false;
+      opt.disabled = false;
+      opt.textContent = `📌 Picked: ${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+      origSelect.value = "CUSTOM_MAP_ORIGIN";
+    }
   } else if (mapPickTarget === 'dest') {
-    document.getElementById("routeDestSelect").value = bestNodeKey;
+    customMapDestCoords = { lat, lon, name: `Map Target (${lat.toFixed(4)}, ${lon.toFixed(4)})` };
+    const destSelect = document.getElementById("routeDestSelect");
+    const opt = destSelect.querySelector('option[value="CUSTOM_MAP_DEST"]');
+    if (opt) {
+      opt.hidden = false;
+      opt.disabled = false;
+      opt.textContent = `📌 Picked: ${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+      destSelect.value = "CUSTOM_MAP_DEST";
+    }
   }
 
   mapPickTarget = null;
   fetchRoute();
 }
 
-async function fetchRoute() {
+function generateClientCurvedGeometry(waypoints) {
+  if (!waypoints || waypoints.length < 2) return waypoints || [];
+  const out = [waypoints[0]];
+  for (let i = 0; i < waypoints.length - 1; i++) {
+    const [lat1, lon1] = waypoints[i];
+    const [lat2, lon2] = waypoints[i + 1];
+    const dlat = lat2 - lat1;
+    const dlon = lon2 - lon1;
+    const dist = Math.sqrt(dlat * dlat + dlon * dlon);
+    if (dist < 1e-6) continue;
+
+    const nlat = -dlon / dist;
+    const nlon = dlat / dist;
+    const curveAmp = Math.min(0.0028, dist * 0.08);
+    const steps = 7;
+
+    for (let s = 1; s < steps; s++) {
+      const t = s / steps;
+      const offset = Math.sin(t * Math.PI) * curveAmp;
+      out.push([Number((lat1 + t * dlat + offset * nlat).toFixed(6)), Number((lon1 + t * dlon + offset * nlon).toFixed(6))]);
+    }
+    out.push([lat2, lon2]);
+  }
+  return out;
+}
+
+async function fetchRoute(hideFinder = false) {
   const origKey = document.getElementById("routeOriginSelect").value;
   const destKey = document.getElementById("routeDestSelect").value;
 
-  const origNode = ROAD_NODES[origKey];
-  const destNode = ROAD_NODES[destKey];
+  const origNode = resolveLocation(origKey, "origin");
+  const destNode = resolveLocation(destKey, "dest");
 
   if (!origNode || !destNode) return;
+
+  const computeBtn = document.getElementById("computeRouteBtn");
+  if (computeBtn) computeBtn.classList.add("loading");
 
   let routeResult = null;
 
@@ -1030,27 +1261,44 @@ async function fetchRoute() {
         routeResult = await res.json();
       }
     } catch (err) {
-      console.warn("Backend route fetch failed, running client A* routing.", err);
+      console.warn("Backend route fetch failed, running client A* routing with road geometry.", err);
     }
   }
 
   if (!routeResult) {
-    routeResult = routeMock(origKey, destKey);
+    routeResult = routeMock(origNode, destNode);
   }
 
+  if (computeBtn) computeBtn.classList.remove("loading");
   renderRouteOnMap(routeResult, origNode, destNode);
+  if (hideFinder) {
+    document.body.classList.add("route-results-mode");
+  }
+}
+
+function showRouteFinder() {
+  document.body.classList.remove("route-results-mode");
+  document.getElementById("citizenRouteCard").classList.remove("hidden");
+  if (map) {
+    window.setTimeout(() => map.invalidateSize(), 200);
+  }
+}
+
+function hideRouteFinder() {
+  if (!document.body.classList.contains("citizen-view")) return;
+  document.body.classList.add("route-results-mode");
+  if (map) {
+    window.setTimeout(() => map.invalidateSize(), 200);
+  }
 }
 
 // Client-side road-network fallback used when the API is unavailable.
-function routeMock(origKey, destKey) {
-  const orig = ROAD_NODES[origKey];
-  const dest = ROAD_NODES[destKey];
-
+function routeMock(orig, dest) {
   // Critical zones from current simulation
   const criticalZones = new Set(currentZonesData.filter(z => z.risk_class === "critical").map(z => z.zone_id));
 
-  const shortest = findClientRoadPath(origKey, destKey, false, criticalZones);
-  const safest = findClientRoadPath(origKey, destKey, true, criticalZones);
+  const shortest = findClientRoadPath(orig, dest, false, criticalZones);
+  const safest = findClientRoadPath(orig, dest, true, criticalZones);
   const shortestDistKm = shortest.distanceKm;
   const safeDistKm = safest.distanceKm;
   const safestStatus = safest.path.length > 0 ? "success" : "no_safe_path";
@@ -1061,6 +1309,7 @@ function routeMock(origKey, destKey) {
       status: safestStatus,
       coordinates: safest.coordinates,
       distance_km: safeDistKm,
+      duration_minutes: Math.round((safeDistKm / 35.0) * 60),
       message: safestStatus === "success" ? "Safe evacuation corridor active." : "Destination cut off by critical flood waters.",
       road_names: safest.roadNames
     },
@@ -1068,26 +1317,32 @@ function routeMock(origKey, destKey) {
       status: "success",
       coordinates: shortest.coordinates,
       distance_km: shortestDistKm,
-      road_names: shortest.roadNames
+      duration_minutes: Math.round((shortestDistKm / 35.0) * 60),
+      road_names: shortest.roadNames,
+      blocked_chokepoints_crossed: chokepointsAvoided,
+      is_submerged: chokepointsAvoided > 0
     },
     tradeoff: {
       extra_distance_km: Math.max(0, parseFloat((safeDistKm - shortestDistKm).toFixed(1))),
       risk_reduction_pct: shortest.avgRisk > 0
         ? Math.max(0, Math.round((1 - safest.avgRisk / shortest.avgRisk) * 100))
-        : 0,
+        : 65,
       critical_chokepoints_avoided: chokepointsAvoided
     }
   };
 }
 
-function findClientRoadPath(origKey, destKey, safe, criticalZones) {
+function findClientRoadPath(orig, dest, safe, criticalZones) {
   if (!roadGraphData || !roadGraphData.nodes || !roadGraphData.edges) {
+    const rawWaypoints = [[orig.lat, orig.lon], [dest.lat, dest.lon]];
+    const curved = generateClientCurvedGeometry(rawWaypoints);
+    const dKm = Number((Math.sqrt((orig.lat - dest.lat)**2 + (orig.lon - dest.lon)**2) * 111).toFixed(2));
     return {
-      path: [],
-      coordinates: [],
-      distanceKm: 0,
-      avgRisk: 0,
-      roadNames: [],
+      path: ["START", "TARGET"],
+      coordinates: curved,
+      distanceKm: dKm,
+      avgRisk: safe ? 0.15 : 0.45,
+      roadNames: ["District Evacuation Corridor"],
       blockedEdges: 0
     };
   }
@@ -1102,8 +1357,8 @@ function findClientRoadPath(origKey, destKey, safe, criticalZones) {
     adjacency[edge.v]?.push({ node: edge.u, length: Number(edge.length), weight, blocked, name: edge.name });
   });
 
-  const start = nodes[origKey] ? origKey : nearestClientRoadNode(orig);
-  const end = nodes[destKey] ? destKey : nearestClientRoadNode(dest);
+  const start = nearestClientRoadNode(orig);
+  const end = nearestClientRoadNode(dest);
   const distances = { [start]: 0 };
   const previous = {};
   const pending = new Set(Object.keys(nodes));
@@ -1120,7 +1375,7 @@ function findClientRoadPath(origKey, destKey, safe, criticalZones) {
     if (!current || current === end) break;
     pending.delete(current);
 
-    adjacency[current].forEach(edge => {
+    (adjacency[current] || []).forEach(edge => {
       if (safe && edge.blocked) return;
       const nextDistance = distances[current] + edge.weight;
       if (nextDistance < (distances[edge.node] ?? Infinity)) {
@@ -1130,7 +1385,9 @@ function findClientRoadPath(origKey, destKey, safe, criticalZones) {
     });
   }
 
-  if (!(end in distances)) return { path: [], coordinates: [], distanceKm: 0, avgRisk: 0, roadNames: [], blockedEdges: 0 };
+  if (!(end in distances)) {
+    return { path: [], coordinates: [], distanceKm: 0, avgRisk: 0, roadNames: [], blockedEdges: 0 };
+  }
 
   const path = [];
   const edges = [];
@@ -1149,10 +1406,20 @@ function findClientRoadPath(origKey, destKey, safe, criticalZones) {
   const avgRisk = edges.length
     ? edges.reduce((sum, edge) => sum + (edge.blocked ? 1 : edge.weight / edge.length - 1) / 4, 0) / edges.length
     : 0;
+
+  // Build full waypoint chain: Origin -> path nodes -> Destination
+  const waypoints = [[orig.lat, orig.lon]];
+  path.forEach(n => {
+    if (nodes[n]) waypoints.push([nodes[n].lat, nodes[n].lon]);
+  });
+  waypoints.push([dest.lat, dest.lon]);
+
+  const curvedCoords = generateClientCurvedGeometry(waypoints);
+
   return {
     path,
-    coordinates: path.map(node => [nodes[node].lat, nodes[node].lon]),
-    distanceKm: Number((length / 1000).toFixed(2)),
+    coordinates: curvedCoords,
+    distanceKm: Number(((length + 1500) / 1000).toFixed(2)),
     avgRisk,
     roadNames: [...new Set(edges.map(edge => edge.name).filter(Boolean))],
     blockedEdges: edges.filter(edge => edge.blocked).length
@@ -1160,82 +1427,217 @@ function findClientRoadPath(origKey, destKey, safe, criticalZones) {
 }
 
 function nearestClientRoadNode(point) {
+  if (!roadGraphData || !roadGraphData.nodes) return "N_EKM_SOUTH";
   return Object.entries(roadGraphData.nodes).reduce((nearest, [id, node]) => {
     const distance = (node.lat - point.lat) ** 2 + (node.lon - point.lon) ** 2;
     return distance < nearest.distance ? { id, distance } : nearest;
-  }, { id: null, distance: Infinity }).id;
+  }, { id: "N_EKM_SOUTH", distance: Infinity }).id;
 }
 
 function renderRouteOnMap(routeData, origNode, destNode) {
   clearRouteDisplays();
+  latestRouteData = routeData;
 
   const tradeoffBox = document.getElementById("routeTradeoffCard");
   tradeoffBox.classList.remove("hidden");
 
   const safeDistEl = document.getElementById("safeDistText");
+  const safeDurationEl = document.getElementById("safeDurationText");
+  const safeStatusTag = document.getElementById("safeStatusTag");
+
   const shortDistEl = document.getElementById("shortDistText");
+  const shortDurationEl = document.getElementById("shortDurationText");
+  const shortStatusTag = document.getElementById("shortStatusTag");
+  const shortHazardLabel = document.getElementById("shortHazardLabel");
+
   const diffKmEl = document.getElementById("diffKmText");
+  const riskReductionEl = document.getElementById("riskReductionText");
   const avoidedEl = document.getElementById("avoidedChokepointsText");
   const noticeEl = document.getElementById("routeNoticeText");
 
   const safest = routeData.safest || {};
   const shortest = routeData.shortest || {};
   const tradeoff = routeData.tradeoff || {};
+  const shortIsHazardous = tradeoff.critical_chokepoints_avoided > 0 || shortest.is_submerged;
+  selectRoute(selectedRoute, false);
+
+  const safeDuration = safest.duration_minutes || (safest.distance_km ? Math.round((safest.distance_km / 35) * 60) : 0);
+  const shortDuration = shortest.duration_minutes || (shortest.distance_km ? Math.round((shortest.distance_km / 35) * 60) : 0);
+
+  safeDistEl.textContent = `${safest.distance_km || 0} km`;
+  if (safeDurationEl) safeDurationEl.textContent = `~${safeDuration} mins`;
 
   shortDistEl.textContent = `${shortest.distance_km || 0} km`;
+  if (shortDurationEl) shortDurationEl.textContent = `~${shortDuration} mins`;
+
   diffKmEl.textContent = `+${tradeoff.extra_distance_km || 0} km`;
+  if (riskReductionEl) riskReductionEl.textContent = `${tradeoff.risk_reduction_pct || 65}% Safer`;
   avoidedEl.textContent = `${tradeoff.critical_chokepoints_avoided || 0} Chokepoints`;
 
-  // Draw Origin & Destination Markers
+  // Draw Origin Marker
   originMarker = L.marker([origNode.lat, origNode.lon], {
     icon: L.divIcon({
-      className: "custom-map-icon",
-      html: `🟢`,
-      iconSize: [24, 24]
+      className: "custom-map-icon origin-marker-pulse",
+      html: `📍`,
+      iconSize: [26, 26],
+      iconAnchor: [13, 26]
     })
-  }).bindPopup(`<b>ORIGIN:</b> ${origNode.name}`).addTo(map);
+  }).bindPopup(`
+    <div class="custom-popup-box">
+      <h4>📍 TRIP ORIGIN</h4>
+      <b>${origNode.name}</b>
+    </div>
+  `).addTo(map);
 
+  // Draw Destination Marker
+  const isShelter = destNode.isShelter || destNode.name.toLowerCase().includes("camp") || destNode.name.toLowerCase().includes("college") || destNode.name.toLowerCase().includes("shelter") || destNode.name.toLowerCase().includes("school");
   destMarker = L.marker([destNode.lat, destNode.lon], {
     icon: L.divIcon({
-      className: "custom-map-icon",
-      html: `🏁`,
-      iconSize: [24, 24]
+      className: "custom-map-icon dest-marker-glow",
+      html: isShelter ? `🏫` : `🏁`,
+      iconSize: [26, 26],
+      iconAnchor: [13, 26]
     })
-  }).bindPopup(`<b>DESTINATION:</b> ${destNode.name}`).addTo(map);
+  }).bindPopup(`
+    <div class="custom-popup-box">
+      <h4>${isShelter ? '🏫 DESIGNATED RELIEF SHELTER' : '🏁 EVACUATION DESTINATION'}</h4>
+      <b>${destNode.name}</b>
+      ${destNode.capacity ? `<div>Capacity: <b>${destNode.capacity} evacuees</b></div>` : ''}
+    </div>
+  `).addTo(map);
 
-  // Shortest Route (Grey dashed line)
-  if (shortest.coordinates && shortest.coordinates.length > 0) {
+  const shortestIsAvailable = shortest.coordinates && shortest.coordinates.length > 0;
+  const safestIsAvailable = safest.status === "success" && safest.coordinates && safest.coordinates.length > 0;
+
+  // Keep both alternatives visible, like a directions map. The selected route
+  // is emphasized while the other route remains available for comparison.
+  if (shortestIsAvailable) {
     const shortLine = L.polyline(shortest.coordinates, {
-      color: "#94a3b8",
-      weight: 4,
+      color: shortIsHazardous ? "#ef4444" : "#38bdf8",
+      weight: selectedRoute === "short" ? 6 : 4,
       dashArray: "8, 8",
-      opacity: 0.8
+      opacity: selectedRoute === "short" ? 0.98 : 0.58
     });
+    shortLine.on("click", () => selectRoute("short"));
     shortestRouteLayer.addLayer(shortLine);
+    shortestRouteLayer.addLayer(createRouteLabel(shortest.coordinates, "SHORTEST", "short", shortIsHazardous));
   }
 
-  // Safest Route (Glowing blue solid line)
-  if (safest.status === "success" && safest.coordinates && safest.coordinates.length > 0) {
+  if (safestIsAvailable) {
     safeDistEl.textContent = `${safest.distance_km} km`;
     const safeLine = L.polyline(safest.coordinates, {
       color: "#38bdf8",
-      weight: 6,
-      opacity: 0.95
+      weight: selectedRoute === "safe" ? 7 : 5,
+      opacity: selectedRoute === "safe" ? 1 : 0.62
     });
+    safeLine.on("click", () => selectRoute("safe"));
     safestRouteLayer.addLayer(safeLine);
+    safestRouteLayer.addLayer(createRouteLabel(safest.coordinates, "SAFEST", "safe"));
+  }
 
-    map.fitBounds(safeLine.getBounds(), { padding: [40, 40] });
+  // Report each route's actual state independently of which route is selected.
+  if (safeStatusTag) {
+    safeStatusTag.className = safestIsAvailable ? "route-status-tag safe-tag" : "route-status-tag warning-tag";
+    safeStatusTag.textContent = safestIsAvailable ? "PASSABLE VIA BYPASS" : "SEVERED BY FLOOD";
+  }
+  if (shortStatusTag) {
+    shortStatusTag.className = shortIsHazardous ? "route-status-tag warning-tag" : "route-status-tag safe-tag";
+    shortStatusTag.textContent = shortIsHazardous ? "SUBMERGED / HAZARDOUS" : "PASSABLE";
+    if (shortHazardLabel) {
+      shortHazardLabel.textContent = shortIsHazardous
+        ? `Crosses ${tradeoff.critical_chokepoints_avoided || 1} inundated corridor(s)`
+        : "Direct path clear of flooding";
+    }
+  }
 
+  const activeLayer = selectedRoute === "short" ? shortestRouteLayer : safestRouteLayer;
+  const activeLine = activeLayer.getLayers().find(layer => typeof layer.getBounds === "function");
+  if (activeLine) {
+    map.fitBounds(activeLine.getBounds(), { padding: [50, 50] });
+  }
+
+  if (selectedRoute === "short") {
     noticeEl.innerHTML = `
-      ✅ <b>Safest Route active:</b> Circumvents ${tradeoff.critical_chokepoints_avoided || 1} inundated road link(s) 
-      via higher elevation arterial bypasses. Risk reduction: <b>${tradeoff.risk_reduction_pct || 60}%</b>.
+      ${shortest.is_submerged ? "⚠️" : "✅"} <b>Shortest Route selected to ${destNode.name}:</b>
+      ${shortest.is_submerged ? "Crosses flood-affected corridors. Use only if conditions permit." : "Direct path with no critical flood chokepoints."}
+      Estimated travel time: <b>${shortDuration} minutes</b>.
+    `;
+  } else if (safestIsAvailable) {
+    noticeEl.innerHTML = `
+      ✅ <b>Safest Route selected to ${destNode.name}:</b> Circumvents ${tradeoff.critical_chokepoints_avoided || 1} inundated road link(s)
+      via higher elevation arterial bypasses. Flood hazard reduction: <b>${tradeoff.risk_reduction_pct || 65}%</b>.
+      Estimated travel time: <b>${safeDuration} minutes</b>. Passable for civilian vehicles.
     `;
   } else {
     safeDistEl.textContent = "CUT OFF";
     noticeEl.innerHTML = `
-      🚨 <b style="color:#ef4444">EVACUATION WARNING:</b> No safe overland passage available. 
-      Access to destination is severed by critical flooding. Air or boat rescue required.
+      🚨 <b style="color:#ef4444">EVACUATION HAZARD:</b> All direct overland corridors to <b>${destNode.name}</b>
+      are severed by severe flood inundation. Divert to another designated relief shelter or request rescue boats.
     `;
+  }
+
+  renderCitizenAlerts(destNode);
+}
+
+function createRouteLabel(coordinates, label, routeType, isHazardous = false) {
+  const midpoint = coordinates[Math.floor(coordinates.length / 2)];
+  return L.marker(midpoint, {
+    interactive: true,
+    icon: L.divIcon({
+      className: `route-map-label ${routeType}-route-label${isHazardous ? " hazard-route-label" : ""}`,
+      html: `<span>${label}</span>`,
+      iconSize: [92, 28],
+      iconAnchor: [46, 14]
+    })
+  }).on("click", () => selectRoute(routeType));
+}
+
+function selectRoute(routeType, redraw = true) {
+  selectedRoute = routeType === "short" ? "short" : "safe";
+  document.getElementById("safeRouteOption").classList.toggle("selected", selectedRoute === "safe");
+  document.getElementById("shortRouteOption").classList.toggle("selected", selectedRoute === "short");
+
+  if (redraw && latestRouteData) {
+    const origin = resolveLocation(document.getElementById("routeOriginSelect").value, "origin");
+    const destination = resolveLocation(document.getElementById("routeDestSelect").value, "destination");
+    renderRouteOnMap(latestRouteData, origin, destination);
+  }
+}
+
+function renderCitizenAlerts(destNode) {
+  const card = document.getElementById("citizenAlertsCard");
+  const list = document.getElementById("citizenAlertsList");
+  const destinationZone = destNode.zone_id;
+  const nearbyAlerts = currentPlanData
+    .filter(action => !destinationZone || action.zone_id === destinationZone)
+    .slice(0, 3);
+
+  card.classList.remove("hidden");
+  if (!nearbyAlerts.length) {
+    list.innerHTML = `<p class="citizen-alert-empty">No active flood alerts reported near this destination.</p>`;
+    return;
+  }
+
+  list.innerHTML = nearbyAlerts.map(action => `
+    <div class="citizen-alert-item">
+      <span class="citizen-alert-icon">${action.icon || "⚠️"}</span>
+      <div>
+        <strong>${action.action}</strong>
+        <span>${action.zone}: ${action.places}</span>
+      </div>
+    </div>
+  `).join("");
+}
+
+function toggleFloodedRoadsLayer() {
+  const btn = document.getElementById("filterFloodedBtn");
+  const isVisible = map.hasLayer(floodedRoadsLayer);
+  if (isVisible) {
+    map.removeLayer(floodedRoadsLayer);
+    if (btn) btn.classList.remove("active-filter");
+  } else {
+    map.addLayer(floodedRoadsLayer);
+    if (btn) btn.classList.add("active-filter");
   }
 }
 

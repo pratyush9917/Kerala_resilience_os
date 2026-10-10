@@ -237,58 +237,116 @@
     <section class="panel center-panel" id="centerMapPanel">
       
       <!-- CITIZEN ROUTE CONTROLS OVERLAY (Shown in Citizen Tab or Toggle) -->
+      <!-- CITIZEN ROUTE CONTROLS OVERLAY (Shown in Citizen Tab or Toggle) -->
+      <button id="showRouteFinderBtn" class="show-route-finder-btn" onclick="showRouteFinder()" type="button" aria-label="Show route finder" title="Show route finder">🧭</button>
       <div id="citizenRouteCard" class="citizen-route-card hidden">
         <div class="citizen-card-header">
           <div class="citizen-header-title">
             <span class="citizen-icon">🧭</span>
             <div>
-              <h3>CITIZEN SAFE EVACUATION ROUTING</h3>
-              <p>Risk-weighted A* pathfinding avoiding submerged bridges & critical zones</p>
+              <h3>CITIZEN SAFE EVACUATION ROUTE FINDER</h3>
+              <p>Risk-weighted turn-by-turn routing to relief shelters avoiding submerged corridors & critical taluks</p>
             </div>
           </div>
-          <button class="btn-close-citizen" onclick="switchView('command')" title="Close Citizen Routing">✕</button>
+          <button class="btn-close-citizen" onclick="hideRouteFinder()" title="Hide Route Finder">✕</button>
         </div>
 
         <div class="citizen-inputs-grid">
+          <!-- Origin Location Selection -->
           <div class="route-input-group">
             <label for="routeOriginSelect">📍 ORIGIN LOCATION (START)</label>
-            <select id="routeOriginSelect" class="custom-select" onchange="onOriginSelectChange()">
-              <option value="N_ALUVA_RSTN">Aluva Railway Station (Z01)</option>
-              <option value="N_CIAL_AIRPORT">Cochin International Airport (CIAL) (Z09)</option>
-              <option value="N_PARAVUR_JN">North Paravur Town (Z02)</option>
-              <option value="N_KALAMASSERY">Kalamassery Metro Station (Z05)</option>
-              <option value="N_PERUMBAVOOR">Perumbavoor Town Centre (Z06)</option>
-              <option value="N_KAKKANAD_INFO">Infopark Kakkanad (Z03)</option>
-              <option value="N_EKM_SOUTH" selected>Ernakulam South Railway Station (Z03)</option>
-              <option value="N_FORT_KOCHI">Fort Kochi Bus Stand (Z04)</option>
-              <option value="N_MUVATTUPUZHA">Muvattupuzha Kacherithazham (Z07)</option>
-            </select>
-            <button class="btn-map-picker" id="pickOriginMapBtn" onclick="enableMapPick('origin')">📌 Click Map</button>
+            <div class="select-with-actions">
+              <select id="routeOriginSelect" class="custom-select" onchange="onOriginSelectChange()">
+                <option value="GPS_CURRENT">📡 My Current Location (GPS Auto-Detect)</option>
+                <option value="N_EKM_SOUTH" selected>🚉 Ernakulam South Railway Station (Z03)</option>
+                <option value="N_ALUVA_RSTN">🚉 Aluva Railway Station (Z01)</option>
+                <option value="N_FORT_KOCHI">🏖️ Fort Kochi Bus Stand (Z04)</option>
+                <option value="N_PARAVUR_JN">🏙️ North Paravur Town (Z02)</option>
+                <option value="N_KALAMASSERY">🚇 Kalamassery Metro Station (Z05)</option>
+                <option value="N_CUSAT_JN">🎓 CUSAT University Gate (Z05)</option>
+                <option value="N_PERUMBAVOOR">🏙️ Perumbavoor Town Centre (Z06)</option>
+                <option value="N_KAKKANAD_INFO">💻 Infopark Kakkanad Expressway (Z03)</option>
+                <option value="N_CIAL_AIRPORT">✈️ Cochin International Airport (CIAL) (Z09)</option>
+                <option value="N_MUVATTUPUZHA">🏙️ Muvattupuzha Kacherithazham (Z07)</option>
+                <option value="N_KOTHAMANGALAM">🏔️ Kothamangalam Town (Z08)</option>
+                <option value="N_ANGAMALY_TOWN">🚌 Angamaly KSRTC Centre (Z09)</option>
+                <option value="N_TRIPUNITHURA">🏛️ Tripunithura Statue Junction (Z10)</option>
+                <option value="CUSTOM_MAP_ORIGIN" disabled hidden>📌 Selected Location on Map</option>
+              </select>
+              <div class="picker-btn-group">
+                <button class="btn-map-picker" id="gpsOriginBtn" onclick="useGpsOrigin()" title="Locate via device GPS">📡 GPS</button>
+                <button class="btn-map-picker" id="pickOriginMapBtn" onclick="enableMapPick('origin')" title="Click on Map">📌 Map</button>
+              </div>
+            </div>
           </div>
 
           <div class="route-swap-wrap">
             <button class="btn-swap-route" onclick="swapRouteEndpoints()" title="Swap Origin & Destination">⇄</button>
           </div>
 
+          <!-- Destination Shelter Selection -->
           <div class="route-input-group">
-            <label for="routeDestSelect">🏁 SAFE DESTINATION (TARGET)</label>
-            <select id="routeDestSelect" class="custom-select" onchange="onDestSelectChange()">
-              <option value="N_ALUVA_RSTN" selected>Aluva Railway Station (Z01)</option>
-              <option value="N_CIAL_AIRPORT">Cochin International Airport (CIAL) (Z09)</option>
-              <option value="N_PARAVUR_JN">North Paravur Town (Z02)</option>
-              <option value="N_KALAMASSERY">Kalamassery Metro Station (Z05)</option>
-              <option value="N_PERUMBAVOOR">Perumbavoor Town Centre (Z06)</option>
-              <option value="N_KAKKANAD_INFO">Infopark Kakkanad (Z03)</option>
-              <option value="N_EKM_SOUTH">Ernakulam South Railway Station (Z03)</option>
-              <option value="N_FORT_KOCHI">Fort Kochi Bus Stand (Z04)</option>
-              <option value="N_KOTHAMANGALAM">Kothamangalam Foothills (Z08)</option>
-            </select>
-            <button class="btn-map-picker" id="pickDestMapBtn" onclick="enableMapPick('dest')">📌 Click Map</button>
+            <label for="routeDestSelect">🏁 SAFE RELIEF SHELTER (TARGET)</label>
+            <div class="select-with-actions">
+              <select id="routeDestSelect" class="custom-select" onchange="onDestSelectChange()">
+                <option value="AUTO_NEAREST_SAFE" selected>🎯 Nearest Safe Shelter (Auto-Recommend by Flood Risk)</option>
+                <optgroup label="Aluva Taluk (Z01) Relief Camps">
+                  <option value="SHELTER_0">🏫 UC College Aluva Relief Camp (Cap: 1200)</option>
+                  <option value="SHELTER_1">🏫 St. Xavier's College for Women Aluva (Cap: 900)</option>
+                  <option value="SHELTER_2">🏫 Govt Girls HSS Aluva (Cap: 600)</option>
+                </optgroup>
+                <optgroup label="North Paravur (Z02) Relief Camps">
+                  <option value="SHELTER_3">🏫 SNM College Maliankara Paravur (Cap: 1100)</option>
+                  <option value="SHELTER_4">🏫 Govt Boys HSS North Paravur (Cap: 850)</option>
+                  <option value="SHELTER_5">🏫 St. Aloysius HSS Paravur (Cap: 700)</option>
+                </optgroup>
+                <optgroup label="Kanayannur / Kochi City (Z03) Relief Camps">
+                  <option value="SHELTER_6">🏫 Maharajas College Ernakulam (Cap: 2000)</option>
+                  <option value="SHELTER_7">🏫 St. Albert's College Ernakulam (Cap: 1500)</option>
+                  <option value="SHELTER_8">🏫 St. Teresa's College Park Avenue (Cap: 1300)</option>
+                </optgroup>
+                <optgroup label="Fort Kochi (Z04) Relief Camps">
+                  <option value="SHELTER_9">🏫 Santa Cruz HSS Fort Kochi (Cap: 800)</option>
+                  <option value="SHELTER_10">🏫 TD High School Mattancherry (Cap: 650)</option>
+                </optgroup>
+                <optgroup label="Kalamassery (Z05) Relief Camps">
+                  <option value="SHELTER_11">🏫 CUSAT Student Amenity Centre (Cap: 1800)</option>
+                  <option value="SHELTER_12">🏫 Rajagiri College of Social Sciences (Cap: 1400)</option>
+                </optgroup>
+                <optgroup label="Perumbavoor (Z06) Relief Camps">
+                  <option value="SHELTER_13">🏫 Sree Sankara College Kalady (Cap: 1600)</option>
+                  <option value="SHELTER_14">🏫 Asramam HSS Perumbavoor (Cap: 950)</option>
+                </optgroup>
+                <optgroup label="Muvattupuzha (Z07) Relief Camps">
+                  <option value="SHELTER_15">🏫 NSS HSS Muvattupuzha (Cap: 750)</option>
+                  <option value="SHELTER_16">🏫 Nirmala College Muvattupuzha (Cap: 1500)</option>
+                </optgroup>
+                <optgroup label="Kothamangalam (Z08) Relief Camps">
+                  <option value="SHELTER_17">🏫 Mar Athanasius College (Cap: 1700)</option>
+                </optgroup>
+                <optgroup label="Angamaly (Z09) Relief Camps">
+                  <option value="SHELTER_18">🏫 De Paul Institute Angamaly (Cap: 1300)</option>
+                </optgroup>
+                <optgroup label="Tripunithura (Z10) Relief Camps">
+                  <option value="SHELTER_19">🏫 Govt Sanskrit College (Cap: 900)</option>
+                </optgroup>
+                <optgroup label="Strategic Transportation Hubs">
+                  <option value="N_CIAL_AIRPORT">✈️ Cochin International Airport (CIAL) (Z09)</option>
+                  <option value="N_EKM_SOUTH">🚉 Ernakulam South Railway Station (Z03)</option>
+                  <option value="N_ALUVA_RSTN">🚉 Aluva Railway Station (Z01)</option>
+                </optgroup>
+                <option value="CUSTOM_MAP_DEST" disabled hidden>📌 Selected Destination on Map</option>
+              </select>
+              <div class="picker-btn-group">
+                <button class="btn-map-picker" id="pickDestMapBtn" onclick="enableMapPick('dest')" title="Click on Map">📌 Map</button>
+              </div>
+            </div>
           </div>
 
           <div class="route-action-wrap">
-            <button id="computeRouteBtn" class="btn-compute-route" onclick="fetchRoute()">
-              <span>FIND SAFEST ROUTE</span>
+            <button id="computeRouteBtn" class="btn-compute-route" onclick="fetchRoute(true)">
+              <span class="btn-shine"></span>
+              <span>COMPUTE SAFE ROUTE</span>
             </button>
           </div>
         </div>
@@ -296,33 +354,60 @@
         <!-- Route Comparison Trade-off Box -->
         <div id="routeTradeoffCard" class="route-tradeoff-card hidden">
           <div class="tradeoff-badges">
-            <div class="tradeoff-badge safe">
+            <button id="safeRouteOption" class="tradeoff-badge safe route-option selected" onclick="selectRoute('safe')" type="button">
               <span class="route-legend-line blue-solid"></span>
-              <span class="route-type-title">SAFEST ROUTE</span>
-              <span id="safeDistText" class="route-stat-val">-- km</span>
-              <span class="route-status-tag safe-tag">PASSABLE</span>
-            </div>
-            <div class="tradeoff-badge short">
+              <div class="route-header-line">
+                <span class="route-type-title">SAFEST ROUTE</span>
+                <span id="safeStatusTag" class="route-status-tag safe-tag">PASSABLE VIA BYPASS</span>
+              </div>
+              <div class="route-stat-row">
+                <span id="safeDistText" class="route-stat-val">-- km</span>
+                <span id="safeDurationText" class="route-duration-val">~-- mins</span>
+              </div>
+              <span class="route-note-label">Avoids submerged bridges & high hazard zones</span>
+            </button>
+
+            <button id="shortRouteOption" class="tradeoff-badge short route-option" onclick="selectRoute('short')" type="button">
               <span class="route-legend-line grey-dashed"></span>
-              <span class="route-type-title">SHORTEST ROUTE</span>
-              <span id="shortDistText" class="route-stat-val">-- km</span>
-              <span id="shortStatusTag" class="route-status-tag warning-tag">FLOODED</span>
-            </div>
+              <div class="route-header-line">
+                <span class="route-type-title">SHORTEST ROUTE</span>
+                <span id="shortStatusTag" class="route-status-tag warning-tag">SUBMERGED</span>
+              </div>
+              <div class="route-stat-row">
+                <span id="shortDistText" class="route-stat-val">-- km</span>
+                <span id="shortDurationText" class="route-duration-val">~-- mins</span>
+              </div>
+              <span class="route-note-label" id="shortHazardLabel">Crosses critical flood chokepoints</span>
+            </button>
+
             <div class="tradeoff-badge metrics">
               <div class="stat-mini">
-                <span class="label">Extra Distance:</span>
+                <span class="label">Distance Difference:</span>
                 <span id="diffKmText" class="val">+0.0 km</span>
               </div>
               <div class="stat-mini">
-                <span class="label">Blocked Links Avoided:</span>
+                <span class="label">Flood Risk Reduction:</span>
+                <span id="riskReductionText" class="val safe-highlight">0% Safer</span>
+              </div>
+              <div class="stat-mini">
+                <span class="label">Inundated Links Avoided:</span>
                 <span id="avoidedChokepointsText" class="val highlight">0 Chokepoints</span>
               </div>
             </div>
           </div>
+
           <div id="routeNoticeText" class="route-notice-text">
-            Safest route circumvents inundated low-lying causeways along the Periyar basin.
+            Safest route circumvents inundated low-lying causeways along the Periyar basin via higher elevation arterial bypasses.
           </div>
         </div>
+
+        <section id="citizenAlertsCard" class="citizen-alerts-card hidden" aria-live="polite">
+          <div class="citizen-alerts-header">
+            <span>⚠️</span>
+            <h3>ALERTS NEAR YOUR ROUTE</h3>
+          </div>
+          <div id="citizenAlertsList"></div>
+        </section>
       </div>
 
       <!-- Leaflet Map Container -->
@@ -330,20 +415,23 @@
 
       <!-- Floating Map Controls / Inspection Overlay -->
       <div class="map-floating-overlay">
-        <button class="map-quick-btn drawer-trigger" onclick="toggleDrawer('leftControlPanel')" title="Open simulation controls">
+        <button class="map-quick-btn drawer-trigger" id="btnToggleSim" onclick="toggleDrawer('leftControlPanel')" title="Open simulation controls">
           ⚙️ Simulate
         </button>
-        <button class="map-quick-btn drawer-trigger" onclick="toggleDrawer('bottomChartPanel')" title="Open analytics">
+        <button class="map-quick-btn drawer-trigger" id="btnToggleChart" onclick="toggleDrawer('bottomChartPanel')" title="Open analytics">
           📊 Analytics
         </button>
         <button class="map-quick-btn" onclick="resetMapCenter()" title="Center on Ernakulam District">
-          🎯 Ernakulam View
+          🎯 Reset Map
         </button>
-        <button class="map-quick-btn" onclick="toggleHospitalLayers()" title="Toggle Hospital Markers">
-          🏥 Hospitals
+        <button class="map-quick-btn active-filter" id="filterSheltersBtn" onclick="toggleShelterLayers()" title="Toggle Designated Relief Shelters">
+          🏫 Shelters (20)
         </button>
-        <button class="map-quick-btn" onclick="toggleShelterLayers()" title="Toggle Relief Shelters">
-          🏫 Shelters
+        <button class="map-quick-btn active-filter" id="filterHospitalsBtn" onclick="toggleHospitalLayers()" title="Toggle Hospital Markers">
+          🏥 Hospitals (16)
+        </button>
+        <button class="map-quick-btn active-filter" id="filterFloodedBtn" onclick="toggleFloodedRoadsLayer()" title="Toggle Inundated Corridors">
+          🚧 Inundated Roads
         </button>
       </div>
 
