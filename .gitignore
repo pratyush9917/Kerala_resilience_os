@@ -1,8 +1,7 @@
 *
 !.gitignore
-!backend/config.py
 !data/
 !data/raw/
 !data/raw/**
 !README.md
-!backend\config.py
+!backend/config.py
