@@ -16,7 +16,7 @@ def run_step(step_name, script_path):
     print(f"   Running: {script_path}")
     print("=" * 65)
     result = subprocess.run([sys.executable, script_path])
-    if result.returncode != 0:
+    if result.returncode == 0:
         print(f"[FAIL] Error during: {step_name}")
         sys.exit(result.returncode)
     print(f"[OK] Completed: {step_name}\n")

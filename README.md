@@ -97,6 +97,10 @@ Open your browser and navigate to:
 ### 2. Standalone Frontend Preview
 Double-click `frontend/index.html` to open directly in any browser. The built-in client engine automatically provides full simulation and routing capabilities even without the backend.
 
+When served by FastAPI, map tiles are requested through the `/tiles/{z}/{x}/{y}.png`
+backend proxy. The configured `CARTO_API_KEY` is used only on the server and is never
+returned by an API endpoint or embedded in browser JavaScript/network URLs.
+
 ### 3. Run the Automated Test Suite
 ```bash
 py -3.13 tests/test_api.py

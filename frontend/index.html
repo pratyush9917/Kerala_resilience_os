@@ -330,6 +330,12 @@
 
       <!-- Floating Map Controls / Inspection Overlay -->
       <div class="map-floating-overlay">
+        <button class="map-quick-btn drawer-trigger" onclick="toggleDrawer('leftControlPanel')" title="Open simulation controls">
+          ⚙️ Simulate
+        </button>
+        <button class="map-quick-btn drawer-trigger" onclick="toggleDrawer('bottomChartPanel')" title="Open analytics">
+          📊 Analytics
+        </button>
         <button class="map-quick-btn" onclick="resetMapCenter()" title="Center on Ernakulam District">
           🎯 Ernakulam View
         </button>
@@ -340,6 +346,8 @@
           🏫 Shelters
         </button>
       </div>
+
+      <button class="map-drawer-close control-drawer-close" onclick="toggleDrawer('leftControlPanel')" aria-label="Close simulation controls">✕</button>
 
       <!-- Clicked Zone Quick Inspector Bar -->
       <div id="zoneInspectorBar" class="zone-inspector-bar hidden">
@@ -428,6 +436,7 @@
 
     <!-- BOTTOM PANEL: Chart.js Visualizations & Factor Breakdown -->
     <footer class="panel bottom-panel" id="bottomChartPanel">
+      <button class="map-drawer-close chart-drawer-close" onclick="toggleDrawer('bottomChartPanel')" aria-label="Close analytics">✕</button>
       <div class="bottom-panel-header">
         <div class="chart-tab-bar">
           <button class="chart-tab-btn active" id="chartTabZoneRisk" onclick="switchChartTab('risk')">

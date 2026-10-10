@@ -252,11 +252,9 @@ body.command-center-body {
 ===================================================================== */
 .dashboard-container {
   flex: 1;
-  display: grid;
-  grid-template-columns: 310px 1fr 370px;
-  grid-template-rows: 1fr var(--bottom-chart-height);
-  gap: 10px;
-  padding: 10px 14px 10px 14px;
+  position: relative;
+  display: block;
+  padding: 0;
   height: calc(100vh - var(--header-height));
   overflow: hidden;
   background: radial-gradient(circle at 50% 20%, #0f172a 0%, #060911 100%);
@@ -320,8 +318,18 @@ body.command-center-body {
    LEFT PANEL: CONTROLS & SLIDERS
 ===================================================================== */
 .left-panel {
-  grid-column: 1;
-  grid-row: 1;
+  position: fixed;
+  top: calc(var(--header-height) + 12px);
+  left: 14px;
+  bottom: 14px;
+  width: min(350px, calc(100vw - 28px));
+  z-index: 1200;
+  transform: translateX(calc(-100% - 24px));
+  transition: transform 0.28s ease;
+}
+
+.left-panel.drawer-open {
+  transform: translateX(0);
 }
 
 .control-group {
@@ -640,9 +648,11 @@ body.command-center-body {
    CENTER PANEL: MAP & ROUTING OVERLAY
 ===================================================================== */
 .center-panel {
-  grid-column: 2;
-  grid-row: 1;
   position: relative;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  border-radius: 0;
 }
 
 .map-viewport {
@@ -887,10 +897,12 @@ body.command-center-body {
 .map-floating-overlay {
   position: absolute;
   top: 14px;
-  right: 14px;
+  left: 14px;
   z-index: 500;
   display: flex;
   gap: 6px;
+  flex-wrap: wrap;
+  max-width: calc(100% - 28px);
 }
 
 .map-quick-btn {
@@ -977,8 +989,15 @@ body.command-center-body {
    RIGHT PANEL: IMPACT KPIS & ACTION PLAN
 ===================================================================== */
 .right-panel {
-  grid-column: 3;
-  grid-row: 1;
+  position: fixed;
+  top: calc(var(--header-height) + 12px);
+  right: 14px;
+  width: min(370px, calc(100vw - 28px));
+  max-height: min(680px, calc(100vh - var(--header-height) - 28px));
+  z-index: 1100;
+  background: rgba(10, 14, 23, 0.88);
+  border-color: rgba(56, 189, 248, 0.25);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
 }
 
 .impact-cards-grid {
@@ -1213,9 +1232,45 @@ body.command-center-body {
    BOTTOM PANEL: CHART.JS DATA DOCK
 ===================================================================== */
 .bottom-panel {
-  grid-column: 1 / span 3;
-  grid-row: 2;
-  height: var(--bottom-chart-height);
+  position: fixed;
+  left: 14px;
+  right: 14px;
+  bottom: 14px;
+  height: min(var(--bottom-chart-height), 42vh);
+  z-index: 1200;
+  transform: translateY(calc(100% + 24px));
+  transition: transform 0.28s ease;
+}
+
+.bottom-panel.drawer-open {
+  transform: translateY(0);
+}
+
+.map-drawer-close {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  z-index: 3;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 7px;
+  background: rgba(30, 41, 59, 0.9);
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.map-drawer-close:hover {
+  color: var(--text-main);
+  border-color: var(--border-glow);
+}
+
+.control-drawer-close {
+  display: block;
+}
+
+.chart-drawer-close {
+  top: 6px;
 }
 
 .bottom-panel-header {
@@ -1385,7 +1440,26 @@ body.command-center-body {
 
 /* Responsive adjustments */
 @media (max-width: 1280px) {
-  .dashboard-container {
-    grid-template-columns: 280px 1fr 320px;
+  .right-panel { width: min(340px, calc(100vw - 28px)); }
+}
+
+@media (max-width: 720px) {
+  .app-header { padding: 0 10px; }
+  .header-left .header-divider,
+  .header-left .header-subtitle,
+  .header-center,
+  .live-clock-card { display: none; }
+  .brand-title { font-size: 0.9rem; }
+  .header-right { margin-left: auto; }
+  .right-panel {
+    top: auto;
+    left: 10px;
+    right: 10px;
+    bottom: 10px;
+    width: auto;
+    max-height: 42vh;
   }
+  .left-panel { left: 10px; bottom: 10px; width: calc(100vw - 20px); }
+  .bottom-panel { left: 10px; right: 10px; bottom: 10px; }
+  .map-floating-overlay { right: 10px; left: 10px; }
 }

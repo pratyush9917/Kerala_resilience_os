@@ -24,7 +24,6 @@ let roadGraphData = null;
 let hospitalsData = [];
 let schoolsData = [];
 let zonesGeoJSON = null;
-
 let isBackendLive = false;
 let autoSimActive = false;
 let mapPickTarget = null; // 'origin' | 'dest' | null
@@ -265,13 +264,14 @@ function initMap() {
   // Center of Ernakulam District
   map = L.map("map", {
     zoomControl: false,
-    attributionControl: false
+    attributionControl: true
   }).setView([10.07, 76.38], 10);
 
-  // Tactical Dark Tile Layer (CartoDB DarkMatter)
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+  // The backend proxies tiles so provider credentials never reach the browser.
+  L.tileLayer("/tiles/{z}/{x}/{y}{r}.png", {
     maxZoom: 18,
-    subdomains: 'abcd',
+    subdomains: "abcd",
+    attribution: '&copy; <a href="https://carto.com/attributions">CARTO</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
   }).addTo(map);
 
   // Add customized zoom control to bottom right
@@ -942,6 +942,12 @@ function switchChartTab(mode) {
   updateChart(currentZonesData);
 }
 
+function toggleDrawer(panelId) {
+  const panel = document.getElementById(panelId);
+  if (!panel) return;
+  panel.classList.toggle("drawer-open");
+}
+
 // =====================================================================
 // CITIZEN ROUTING INTERFACE & A* SEARCH EXECUTION
 // =====================================================================
@@ -1035,7 +1041,7 @@ async function fetchRoute() {
   renderRouteOnMap(routeResult, origNode, destNode);
 }
 
-// Client-Side Safe Routing Fallback with A* Logic
+// Client-side road-network fallback used when the API is unavailable.
 function routeMock(origKey, destKey) {
   const orig = ROAD_NODES[origKey];
   const dest = ROAD_NODES[destKey];
@@ -1043,64 +1049,121 @@ function routeMock(origKey, destKey) {
   // Critical zones from current simulation
   const criticalZones = new Set(currentZonesData.filter(z => z.risk_class === "critical").map(z => z.zone_id));
 
-  // Build shortest route straight coordinates
-  const shortestCoords = [
-    [orig.lat, orig.lon],
-    [(orig.lat + dest.lat) / 2 + 0.005, (orig.lon + dest.lon) / 2 - 0.005],
-    [dest.lat, dest.lon]
-  ];
-
-  // Calculate physical distance (km)
-  const straightDistKm = parseFloat((Math.sqrt((orig.lat - dest.lat)**2 + (orig.lon - dest.lon)**2) * 111.0).toFixed(1));
-  const shortestDistKm = parseFloat((straightDistKm * 1.25).toFixed(1));
-
-  // Determine if origin or destination zone is critical
-  const origCritical = criticalZones.has(orig.zone_id);
-  const destCritical = criticalZones.has(dest.zone_id);
-
-  let safestStatus = "success";
-  let safestCoords = [];
-  let safeDistKm = shortestDistKm;
-  let chokepointsAvoided = 0;
-
-  if (origKey === destKey) {
-    safestCoords = [[orig.lat, orig.lon]];
-    safeDistKm = 0;
-  } else if (destCritical && origCritical && criticalZones.size >= 4) {
-    // Both cut off in extreme 2018 flood
-    safestStatus = "no_safe_path";
-    safestCoords = [];
-  } else {
-    // Generate safe detour avoiding low-lying river corridors
-    safestCoords = [
-      [orig.lat, orig.lon],
-      [orig.lat + 0.015, orig.lon + 0.025], // Detour through higher elevation bypass (Kakkanad / Seaport)
-      [(orig.lat + dest.lat) / 2 + 0.020, (orig.lon + dest.lon) / 2 + 0.020],
-      [dest.lat + 0.010, dest.lon + 0.015],
-      [dest.lat, dest.lon]
-    ];
-    safeDistKm = parseFloat((shortestDistKm + 2.8).toFixed(1));
-    chokepointsAvoided = (orig.zone_id === "Z01" || dest.zone_id === "Z01") ? 2 : 1;
-  }
+  const shortest = findClientRoadPath(origKey, destKey, false, criticalZones);
+  const safest = findClientRoadPath(origKey, destKey, true, criticalZones);
+  const shortestDistKm = shortest.distanceKm;
+  const safeDistKm = safest.distanceKm;
+  const safestStatus = safest.path.length > 0 ? "success" : "no_safe_path";
+  const chokepointsAvoided = shortest.blockedEdges;
 
   return {
     safest: {
       status: safestStatus,
-      coordinates: safestCoords,
+      coordinates: safest.coordinates,
       distance_km: safeDistKm,
-      message: safestStatus === "success" ? "Safe evacuation corridor active." : "Destination cut off by critical flood waters."
+      message: safestStatus === "success" ? "Safe evacuation corridor active." : "Destination cut off by critical flood waters.",
+      road_names: safest.roadNames
     },
     shortest: {
       status: "success",
-      coordinates: shortestCoords,
-      distance_km: shortestDistKm
+      coordinates: shortest.coordinates,
+      distance_km: shortestDistKm,
+      road_names: shortest.roadNames
     },
     tradeoff: {
       extra_distance_km: Math.max(0, parseFloat((safeDistKm - shortestDistKm).toFixed(1))),
-      risk_reduction_pct: 65,
+      risk_reduction_pct: shortest.avgRisk > 0
+        ? Math.max(0, Math.round((1 - safest.avgRisk / shortest.avgRisk) * 100))
+        : 0,
       critical_chokepoints_avoided: chokepointsAvoided
     }
   };
+}
+
+function findClientRoadPath(origKey, destKey, safe, criticalZones) {
+  if (!roadGraphData || !roadGraphData.nodes || !roadGraphData.edges) {
+    return {
+      path: [],
+      coordinates: [],
+      distanceKm: 0,
+      avgRisk: 0,
+      roadNames: [],
+      blockedEdges: 0
+    };
+  }
+
+  const nodes = roadGraphData.nodes;
+  const adjacency = Object.fromEntries(Object.keys(nodes).map(id => [id, []]));
+  roadGraphData.edges.forEach(edge => {
+    const risk = currentZonesData.find(z => z.zone_id === edge.zone_id)?.risk || 0.2;
+    const blocked = criticalZones.has(edge.zone_id);
+    const weight = Number(edge.length) * (safe ? 1 + 4 * risk : 1);
+    adjacency[edge.u]?.push({ node: edge.v, length: Number(edge.length), weight, blocked, name: edge.name });
+    adjacency[edge.v]?.push({ node: edge.u, length: Number(edge.length), weight, blocked, name: edge.name });
+  });
+
+  const start = nodes[origKey] ? origKey : nearestClientRoadNode(orig);
+  const end = nodes[destKey] ? destKey : nearestClientRoadNode(dest);
+  const distances = { [start]: 0 };
+  const previous = {};
+  const pending = new Set(Object.keys(nodes));
+
+  while (pending.size) {
+    let current = null;
+    let best = Infinity;
+    pending.forEach(node => {
+      if ((distances[node] ?? Infinity) < best) {
+        best = distances[node];
+        current = node;
+      }
+    });
+    if (!current || current === end) break;
+    pending.delete(current);
+
+    adjacency[current].forEach(edge => {
+      if (safe && edge.blocked) return;
+      const nextDistance = distances[current] + edge.weight;
+      if (nextDistance < (distances[edge.node] ?? Infinity)) {
+        distances[edge.node] = nextDistance;
+        previous[edge.node] = { node: current, edge };
+      }
+    });
+  }
+
+  if (!(end in distances)) return { path: [], coordinates: [], distanceKm: 0, avgRisk: 0, roadNames: [], blockedEdges: 0 };
+
+  const path = [];
+  const edges = [];
+  let cursor = end;
+  while (cursor) {
+    path.unshift(cursor);
+    if (previous[cursor]) {
+      edges.unshift(previous[cursor].edge);
+      cursor = previous[cursor].node;
+    } else {
+      cursor = null;
+    }
+  }
+
+  const length = edges.reduce((sum, edge) => sum + edge.length, 0);
+  const avgRisk = edges.length
+    ? edges.reduce((sum, edge) => sum + (edge.blocked ? 1 : edge.weight / edge.length - 1) / 4, 0) / edges.length
+    : 0;
+  return {
+    path,
+    coordinates: path.map(node => [nodes[node].lat, nodes[node].lon]),
+    distanceKm: Number((length / 1000).toFixed(2)),
+    avgRisk,
+    roadNames: [...new Set(edges.map(edge => edge.name).filter(Boolean))],
+    blockedEdges: edges.filter(edge => edge.blocked).length
+  };
+}
+
+function nearestClientRoadNode(point) {
+  return Object.entries(roadGraphData.nodes).reduce((nearest, [id, node]) => {
+    const distance = (node.lat - point.lat) ** 2 + (node.lon - point.lon) ** 2;
+    return distance < nearest.distance ? { id, distance } : nearest;
+  }, { id: null, distance: Infinity }).id;
 }
 
 function renderRouteOnMap(routeData, origNode, destNode) {
