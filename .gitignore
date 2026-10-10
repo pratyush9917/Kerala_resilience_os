@@ -1,5 +1,6 @@
 *
 !.gitignore
+!backend/config.py
 !data/
 !data/raw/
 !data/raw/**
