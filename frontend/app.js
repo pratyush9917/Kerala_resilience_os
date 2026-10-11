@@ -24,10 +24,6 @@ let hospitalsData = [];
 let schoolsData = [];
 let zonesGeoJSON = null;
 let isBackendLive = false;
-let groqConfigured = false;
-let aiRequestSeq = 0;
-let aiAbortController = null;
-let aiDebounceTimer = null;
 let autoSimActive = false;
 let mapPickTarget = null; // 'origin' | 'dest' | null
 let selectedRoute = "safe";
@@ -324,9 +320,8 @@ async function checkBackendAndLoad() {
     if (res.ok) {
       const data = await res.json();
       isBackendLive = true;
-      groqConfigured = !!data.groq_configured;
       badge.className = "status-badge connected";
-      statusText.textContent = "BASEMAP & AI ENGINE ONLINE";
+      statusText.textContent = "BASEMAP & SIMULATION ENGINE ONLINE";
       
       // Load static zones and network data from API
       const zRes = await fetch("/zones");
@@ -400,9 +395,6 @@ async function runSimulation() {
   renderImpactKPIs(currentImpactData);
   renderActionPlan(currentPlanData);
   updateChart(currentZonesData);
-
-  // Ask Groq for its own impact assessment + action plan (non-blocking)
-  requestAiBriefing(false, rainVal, riverVal);
 
   runBtn.classList.remove("loading");
   runBtnText.textContent = "RUN SIMULATION";
@@ -837,167 +829,6 @@ function renderActionPlan(plan) {
   }).join("");
 
   container.innerHTML = html;
-}
-
-// =====================================================================
-// GROQ AI COMMANDER BRIEFING
-// =====================================================================
-function escHtml(value) {
-  return String(value ?? "").replace(/[&<>"']/g, (c) => ({
-    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
-  }[c]));
-}
-
-function setAiState(icon, html) {
-  document.getElementById("aiBriefingBody").innerHTML =
-    `<div class="ai-state"><span class="ai-state-icon">${icon}</span>${html}</div>`;
-}
-
-/**
- * Sends the current scenario to the backend, which feeds the full simulation
- * output to Groq and returns a validated briefing. `immediate` skips the
- * auto-simulation debounce (used by the Regenerate button).
- */
-function requestAiBriefing(immediate = false, rainVal = null, riverVal = null) {
-  const regenBtn = document.getElementById("aiRegenBtn");
-  const meta = document.getElementById("aiMetaText");
-
-  if (rainVal === null) rainVal = parseFloat(document.getElementById("rainSlider").value);
-  if (riverVal === null) riverVal = parseFloat(document.getElementById("riverSlider").value);
-
-  clearTimeout(aiDebounceTimer);
-  if (aiAbortController) aiAbortController.abort();
-
-  if (!isBackendLive) {
-    regenBtn.disabled = true;
-    setAiState("📡", "The AI briefing needs the live backend. Start the FastAPI server to enable it.");
-    return;
-  }
-
-  const seq = ++aiRequestSeq;
-  regenBtn.disabled = true;
-  meta.textContent = "Analysing scenario with Groq…";
-  document.getElementById("aiBriefingBody").innerHTML =
-    `<div class="ai-loading-bar"></div><div class="ai-state">Sending zone risks, facility impact and ML actions to the AI advisor…</div>`;
-
-  // While auto-simulate is on, wait for the sliders to settle before spending an API call
-  const delay = (autoSimActive && !immediate) ? 1200 : 0;
-  aiDebounceTimer = setTimeout(async () => {
-    const controller = new AbortController();
-    aiAbortController = controller;
-    const timeout = setTimeout(() => controller.abort(), 45000);
-    try {
-      const res = await fetch("/ai-analysis", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ rainfall_mm: rainVal, river_level_m: riverVal }),
-        signal: controller.signal
-      });
-      const data = await res.json();
-      if (seq !== aiRequestSeq) return; // a newer simulation superseded this one
-      renderAiBriefing(data);
-    } catch (err) {
-      if (seq !== aiRequestSeq) return;
-      setAiState("⚠️", err.name === "AbortError"
-        ? "The AI advisor took too long to respond. Try again."
-        : "Could not reach the AI advisor.");
-      meta.textContent = "AI briefing unavailable";
-    } finally {
-      clearTimeout(timeout);
-      if (seq === aiRequestSeq) regenBtn.disabled = false;
-    }
-  }, delay);
-}
-
-const AI_PHASES = [
-  ["immediate", "⏱ IMMEDIATE · 0–1 HR"],
-  ["short_term", "🕐 SHORT TERM · 1–6 HRS"],
-  ["next_24h", "📅 NEXT 24 HRS"]
-];
-const AI_IMPACT_LABELS = [
-  ["communities", "COMMUNITIES"],
-  ["healthcare", "HEALTHCARE"],
-  ["shelters", "SHELTERS"],
-  ["transport", "TRANSPORT"],
-  ["outlook", "OUTLOOK"]
-];
-
-function renderAiBriefing(res) {
-  const meta = document.getElementById("aiMetaText");
-  const regenBtn = document.getElementById("aiRegenBtn");
-
-  if (res.status === "disabled") {
-    groqConfigured = false;
-    if (regenBtn) regenBtn.disabled = false;
-    setAiState("🔑", `
-      <div style="text-align: left; padding: 6px 4px;">
-        <div style="font-weight: 700; color: #f8fafc; margin-bottom: 6px;">Groq AI Advisor Ready (API Key Pending)</div>
-        <p style="font-size: 0.76rem; color: #94a3b8; margin-bottom: 8px;">To generate comprehensive LLM impact assessments and phased action plans for each simulation:</p>
-        <ol style="font-size: 0.74rem; color: #cbd5e1; margin-left: 16px; margin-bottom: 10px; line-height: 1.5;">
-          <li>Open <code>.env</code> in your project root</li>
-          <li>Set <code>GROQ_API_KEY=gsk_your_key_here</code> (<a href="https://console.groq.com/keys" target="_blank" rel="noopener" style="color: #38bdf8; text-decoration: underline;">get free key</a>)</li>
-          <li>Click <strong>↻ REGENERATE</strong> or run simulation again</li>
-        </ol>
-        <div style="font-size: 0.7rem; color: #64748b; font-style: italic;">Local Multi-Label Random Forest action planner remains active below.</div>
-      </div>
-    `);
-    meta.textContent = "Groq key required in .env";
-    return;
-  }
-  if (res.status !== "ok" || !res.briefing) {
-    if (regenBtn) regenBtn.disabled = false;
-    setAiState("⚠️", escHtml(res.message || "The AI advisor returned an error."));
-    meta.textContent = "AI briefing unavailable";
-    return;
-  }
-
-  groqConfigured = true;
-  if (regenBtn) regenBtn.disabled = false;
-
-  const b = res.briefing;
-  meta.textContent = `Groq · ${res.model} · ${(res.latency_ms / 1000).toFixed(1)}s`;
-
-  const impact = AI_IMPACT_LABELS
-    .filter(([k]) => b.impact_assessment[k])
-    .map(([k, label]) => `<div class="ai-impact-item"><b>${label}</b>${escHtml(b.impact_assessment[k])}</div>`)
-    .join("");
-
-  const actions = AI_PHASES.map(([phase, label]) => {
-    const items = b.action_plan.filter((a) => a.phase === phase);
-    if (!items.length) return "";
-    return `<div class="ai-phase-label">${label}</div>` + items.map((a) => `
-      <div class="ai-action p-${escHtml(a.priority)}">
-        <div class="ai-action-title">${escHtml(a.action)}</div>
-        <div class="ai-action-meta">${[a.target && "📍 " + escHtml(a.target), a.agency && "👥 " + escHtml(a.agency), escHtml(a.priority).toUpperCase()].filter(Boolean).join(" · ")}</div>
-        ${a.rationale ? `<div class="ai-action-why">${escHtml(a.rationale)}</div>` : ""}
-      </div>`).join("");
-  }).join("");
-
-  const zones = b.zone_priorities.length ? `
-    <details open>
-      <summary>ZONE PRIORITIES</summary>
-      <ul>${b.zone_priorities.map((z) => `<li><b>${escHtml(z.zone)}</b> (${escHtml(z.risk_level)}) — ${escHtml(z.focus)}</li>`).join("")}</ul>
-    </details>` : "";
-
-  const watch = b.watch_points.length ? `
-    <details>
-      <summary>WATCH POINTS</summary>
-      <ul>${b.watch_points.map((w) => `<li>${escHtml(w)}</li>`).join("")}</ul>
-    </details>` : "";
-
-  document.getElementById("aiBriefingBody").innerHTML = `
-    <div class="ai-headline-row">
-      <div class="ai-headline">${escHtml(b.headline || "Scenario assessment")}</div>
-      <span class="ai-sev-pill ai-sev-${escHtml(b.severity)}">${escHtml(b.severity)}</span>
-    </div>
-    <p class="ai-summary">${escHtml(b.situation_summary)}</p>
-    ${impact ? `<div class="ai-subhead">IMPACT ASSESSMENT</div><div class="ai-impact-grid">${impact}</div>` : ""}
-    ${actions ? `<div class="ai-subhead">AI ACTION PLAN</div>${actions}` : ""}
-    ${zones}
-    ${b.public_advisory ? `<div class="ai-advisory"><b>📢 PUBLIC ADVISORY</b>${escHtml(b.public_advisory)}</div>` : ""}
-    ${watch}
-    ${b.ml_plan_review ? `<p class="ai-note">ML planner review: ${escHtml(b.ml_plan_review)}</p>` : ""}
-  `;
 }
 
 function dispatchAction(actionName, zoneName) {

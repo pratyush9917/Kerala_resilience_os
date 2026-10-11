@@ -27,7 +27,6 @@ from backend.config import (
 from backend.risk_engine import score_zones
 from backend.action_planner import build_plan
 from backend.impact import compute_impact
-from backend import groq_advisor
 import backend.routing as routing
 
 app = FastAPI(
@@ -75,7 +74,6 @@ def health_check():
         "shelters_monitored": len(schools_df),
         "road_nodes": len(road_graph_data["nodes"]),
         "ai_models_loaded": ["rain_hazard_gbc", "risk_refiner_gbr", "action_planner_rf"],
-        "groq_configured": groq_advisor.is_configured()
     }
 
 TILE_CACHE = {}
@@ -205,8 +203,6 @@ def simulate(req: SimRequest):
       2. Updates road graph edge weights and marks critical inundated roads as blocked.
       3. Performs spatial impact analysis (threatened hospitals, shelters, flooded roads).
       4. Generates prioritized emergency action plan using trained Multi-Label Random Forest.
-    The Groq AI briefing is requested separately via POST /ai-analysis so the map
-    and ML results render immediately without waiting on the LLM.
     """
     scored, impact_res, action_plan = _run_pipeline(req)
 
@@ -224,25 +220,6 @@ def simulate(req: SimRequest):
         "impact": impact_res,
         "plan": action_plan
     }
-
-@app.post("/ai-analysis")
-def ai_analysis(req: SimRequest):
-    """
-    Groq AI Advisor:
-    Re-runs the simulation pipeline server-side for the given inputs (so the LLM is
-    always fed trusted data, never client-supplied numbers), sends the complete
-    scenario to Groq, and returns a validated impact assessment + action plan.
-    Declared as a plain `def` so FastAPI runs the blocking HTTP call in its thread pool.
-    """
-    scored, impact_res, action_plan = _run_pipeline(req)
-    payload = groq_advisor.build_scenario_payload(
-        inputs={"rainfall_mm": req.rainfall_mm, "river_level_m": req.river_level_m},
-        zones=scored.to_dict("records"),
-        impact=impact_res,
-        plan=action_plan,
-        all_shelters=schools_df.to_dict("records"),
-    )
-    return groq_advisor.generate_briefing(payload)
 
 @app.get("/route")
 def get_route(

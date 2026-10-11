@@ -82,47 +82,5 @@ class TestKeralaResilienceOS(unittest.TestCase):
         self.assertEqual(data["safest"]["distance_km"], 0.0)
         print("Identical origin-dest routing handled gracefully.")
 
-    def test_08_ai_analysis_endpoint_disabled_state(self):
-        from backend.main import ai_analysis
-        req = SimRequest(rainfall_mm=250.0, river_level_m=5.0)
-        res = ai_analysis(req)
-        self.assertIn("status", res)
-        # When GROQ_API_KEY is empty, endpoint returns a clean disabled envelope
-        self.assertIn(res["status"], ["disabled", "ok", "error"])
-        print(f"AI analysis endpoint verification passed (status: {res['status']}).")
-
-    def test_09_groq_payload_and_sanitizer(self):
-        import backend.groq_advisor as advisor
-        dummy_inputs = {"rainfall_mm": 350.0, "river_level_m": 7.0}
-        dummy_zones = [{"zone_id": "Z01", "name": "Aluva", "risk": 0.85, "risk_class": "critical"}]
-        dummy_impact = {"counts": {"threatened_hospitals": 3}, "threatened_hospitals": [], "impacted_schools": []}
-        dummy_plan = [{"action": "Evacuation", "zone": "Aluva", "confidence_pct": 95, "priority": 0.8}]
-        dummy_shelters = [{"zone_id": "Z08", "name": "M.A. College", "capacity": 1500}]
-
-        payload = advisor.build_scenario_payload(dummy_inputs, dummy_zones, dummy_impact, dummy_plan, dummy_shelters)
-        self.assertIn("simulation_inputs", payload)
-        self.assertIn("zones_ranked_by_risk", payload)
-        self.assertIn("ml_planner_ranked_actions", payload)
-
-        # Test sanitizer schema coercion
-        raw_mock = {
-            "headline": "Severe flooding in Periyar basin",
-            "severity": "critical",
-            "situation_summary": "Water levels rising near Aluva.",
-            "impact_assessment": {"communities": "Lowlands at risk"},
-            "action_plan": [
-                {"phase": "immediate", "priority": "critical", "action": "Evacuate Aluva", "target": "Aluva", "agency": "NDRF"}
-            ],
-            "zone_priorities": [{"zone": "Aluva", "risk_level": "critical", "focus": "Riverfront evacuations"}],
-            "public_advisory": "Move to higher ground immediately.",
-            "watch_points": ["Periyar gauge at Marthanda Varma Bridge"]
-        }
-        sanitized = advisor._sanitize(raw_mock)
-        self.assertEqual(sanitized["severity"], "critical")
-        self.assertEqual(len(sanitized["action_plan"]), 1)
-        self.assertEqual(sanitized["action_plan"][0]["action"], "Evacuate Aluva")
-        print("Groq payload builder and JSON sanitizer tests passed.")
-
 if __name__ == "__main__":
     unittest.main()
-
