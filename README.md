@@ -86,9 +86,56 @@ Hackverse'26/
 
 ## 🚀 Running the Project
 
+### First-time setup (Windows)
+
+1. Install **Python 3.13 or newer** and make sure the Python launcher (`py`) is available.
+2. Clone or download this repository, then open PowerShell in the project folder:
+
+```powershell
+cd D:\Coding\Kerala_resilience_os
+```
+
+3. Create a virtual environment:
+
+```powershell
+py -3.13 -m venv .venv
+```
+
+If your installed Python version is different, replace `3.13` with that version.
+
+4. Activate the environment:
+
+```powershell
+.\.venv\Scripts\Activate.ps1
+```
+
+If PowerShell blocks activation, either run the commands below using the explicit
+`.venv\Scripts\python.exe` path or allow local scripts for your user:
+
+```powershell
+Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
+```
+
+5. Install the project dependencies:
+
+```powershell
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+```
+
+6. Create the local environment file:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+The default configuration is sufficient for local use. Keep `.env` private; it
+is ignored by Git. A `CARTO_API_KEY` is optional because the map has a fallback
+tile provider.
+
 ### 1. Run the FastAPI Backend Server
 ```bash
-py -3.13 -m uvicorn backend.main:app --host 127.0.0.1 --port 8000 --reload
+python -m uvicorn backend.main:app --host 127.0.0.1 --port 8000 --reload
 ```
 Open your browser and navigate to:
 - **Interactive Command Center**: [http://127.0.0.1:8000](http://127.0.0.1:8000)
@@ -103,7 +150,13 @@ returned by an API endpoint or embedded in browser JavaScript/network URLs.
 
 ### 3. Run the Automated Test Suite
 ```bash
-py -3.13 tests/test_api.py
+python tests/test_api.py
+```
+
+To run the application without activating the environment, use:
+
+```powershell
+.\.venv\Scripts\python.exe -m uvicorn backend.main:app --host 127.0.0.1 --port 8000 --reload
 ```
 
 ---
