@@ -307,11 +307,47 @@ def compute_route(
     }
 
 def get_safest_route(G, origin_lat: float, origin_lon: float, dest_lat: float, dest_lon: float):
-    """Compute the single safest route with risk-weighted A* search."""
+    """
+    Computes Safest Route (risk-weighted edges, avoiding critical submerged corridors)
+    along with Shortest Route for side-by-side comparative trade-off analysis.
+    """
     safest = compute_route(G, origin_lat, origin_lon, dest_lat, dest_lon, mode="safe")
+    shortest = compute_route(G, origin_lat, origin_lon, dest_lat, dest_lon, mode="short")
+
+    # Calculate safety trade-off and count blocked corridors in shortest route
+    dist_diff_km = 0.0
+    risk_diff_pct = 0.0
+    critical_roads_in_shortest = 0
+
+    if shortest["status"] == "success" and len(shortest["nodes"]) > 1:
+        for i in range(len(shortest["nodes"]) - 1):
+            u, v = shortest["nodes"][i], shortest["nodes"][i+1]
+            e_data = G.get_edge_data(u, v)
+            if e_data and e_data.get("blocked", False):
+                critical_roads_in_shortest += 1
+
+    shortest["blocked_chokepoints_crossed"] = critical_roads_in_shortest
+    shortest["is_submerged"] = (critical_roads_in_shortest > 0)
+
+    if safest["status"] == "success" and shortest["status"] == "success":
+        dist_diff_km = round(safest["distance_km"] - shortest["distance_km"], 2)
+        sh_risk = shortest.get("avg_risk", 0.0)
+        sf_risk = safest.get("avg_risk", 0.0)
+        if sh_risk > 0:
+            risk_diff_pct = int(round((1.0 - (sf_risk / sh_risk)) * 100))
+        safest["blocked_avoided"] = critical_roads_in_shortest
+    elif safest["status"] == "no_safe_path":
+        dist_diff_km = 0.0
+        risk_diff_pct = 0
+
     return {
         "safest": safest,
+        "shortest": shortest,
         "tradeoff": {
-            "critical_chokepoints_avoided": safest.get("blocked_avoided", 0),
+            "extra_distance_km": max(0.0, dist_diff_km),
+            "risk_reduction_pct": max(0, risk_diff_pct),
+            "critical_chokepoints_avoided": critical_roads_in_shortest
         }
     }
+
+get_dual_routes = get_safest_route
