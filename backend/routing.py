@@ -141,11 +141,33 @@ def generate_curved_fallback_geometry(waypoints, points_per_segment=7):
 
     return out
 
-def compute_route(G, origin_lat: float, origin_lon: float, dest_lat: float, dest_lon: float, mode: str = "safe"):
+def trim_geometry_at_destination(coordinates, dest_lat, dest_lon):
+    """Keep only the route segment from its start through the destination."""
+    if not coordinates:
+        return coordinates
+
+    destination = (dest_lat, dest_lon)
+    end_index = min(
+        range(len(coordinates)),
+        key=lambda index: haversine_dist(coordinates[index], destination),
+    )
+    trimmed = coordinates[:end_index + 1]
+    if trimmed and haversine_dist(trimmed[-1], destination) > 20.0:
+        trimmed.append([dest_lat, dest_lon])
+    return trimmed
+
+def compute_route(
+    G,
+    origin_lat: float,
+    origin_lon: float,
+    dest_lat: float,
+    dest_lon: float,
+    mode: str = "safe",
+    path_override=None,
+):
     """
     Runs A* search from origin to destination coordinates.
     mode = 'safe' : avoids blocked roads, minimizes risk-weighted cost
-    mode = 'short': uses full road network, minimizes raw physical distance
     Returns realistic street-following polyline coordinates (not just straight chords).
     """
     # Check if origin and destination are virtually identical (< 30m)
@@ -188,7 +210,9 @@ def compute_route(G, origin_lat: float, origin_lon: float, dest_lat: float, dest
         return haversine_dist(pos_u, pos_v)
 
     try:
-        path = nx.astar_path(H, origin_node, dest_node, heuristic=heuristic, weight=weight_fn)
+        path = path_override or nx.astar_path(
+            H, origin_node, dest_node, heuristic=heuristic, weight=weight_fn
+        )
     except (nx.NetworkXNoPath, nx.NodeNotFound):
         if mode == "safe":
             return {
@@ -252,12 +276,16 @@ def compute_route(G, origin_lat: float, origin_lon: float, dest_lat: float, dest
     real_coords, osrm_dist_m, osrm_dur_s = fetch_real_road_geometry(waypoints)
 
     if real_coords and len(real_coords) >= 2:
-        final_coords = real_coords
+        final_coords = trim_geometry_at_destination(real_coords, dest_lat, dest_lon)
         final_dist_m = osrm_dist_m if osrm_dist_m > 0 else total_dist_m
         est_duration_mins = round(osrm_dur_s / 60.0, 1) if osrm_dur_s > 0 else round((final_dist_m / 1000.0) / 35.0 * 60.0, 1)
     else:
         # Fallback to curved geometry interpolation
-        final_coords = generate_curved_fallback_geometry(waypoints)
+        final_coords = trim_geometry_at_destination(
+            generate_curved_fallback_geometry(waypoints),
+            dest_lat,
+            dest_lon,
+        )
         # Direct haversine legs + winding factor ~1.25 for urban Kerala roads
         calc_dist = sum(haversine_dist(waypoints[j], waypoints[j+1]) for j in range(len(waypoints)-1)) * 1.25
         final_dist_m = max(total_dist_m, calc_dist)
@@ -278,45 +306,12 @@ def compute_route(G, origin_lat: float, origin_lon: float, dest_lat: float, dest
         "message": "Route computed successfully with street-level geometry."
     }
 
-def get_dual_routes(G, origin_lat: float, origin_lon: float, dest_lat: float, dest_lon: float):
-    """
-    Computes both Safest and Shortest routes and returns side-by-side trade-off comparison.
-    """
+def get_safest_route(G, origin_lat: float, origin_lon: float, dest_lat: float, dest_lon: float):
+    """Compute the single safest route with risk-weighted A* search."""
     safest = compute_route(G, origin_lat, origin_lon, dest_lat, dest_lon, mode="safe")
-    shortest = compute_route(G, origin_lat, origin_lon, dest_lat, dest_lon, mode="short")
-
-    # Calculate safety trade-off and count blocked corridors in shortest route
-    dist_diff_km = 0.0
-    risk_diff_pct = 0.0
-    critical_roads_in_shortest = 0
-
-    if shortest["status"] == "success" and len(shortest["nodes"]) > 1:
-        for i in range(len(shortest["nodes"]) - 1):
-            u, v = shortest["nodes"][i], shortest["nodes"][i+1]
-            e_data = G.get_edge_data(u, v)
-            if e_data and e_data.get("blocked", False):
-                critical_roads_in_shortest += 1
-
-    shortest["blocked_chokepoints_crossed"] = critical_roads_in_shortest
-    shortest["is_submerged"] = (critical_roads_in_shortest > 0)
-
-    if safest["status"] == "success" and shortest["status"] == "success":
-        dist_diff_km = round(safest["distance_km"] - shortest["distance_km"], 2)
-        sh_risk = shortest.get("avg_risk", 0.0)
-        sf_risk = safest.get("avg_risk", 0.0)
-        if sh_risk > 0:
-            risk_diff_pct = int(round((1.0 - (sf_risk / sh_risk)) * 100))
-        safest["blocked_avoided"] = critical_roads_in_shortest
-    elif safest["status"] == "no_safe_path":
-        dist_diff_km = 0.0
-        risk_diff_pct = 0
-
     return {
         "safest": safest,
-        "shortest": shortest,
         "tradeoff": {
-            "extra_distance_km": max(0.0, dist_diff_km),
-            "risk_reduction_pct": max(0, risk_diff_pct),
-            "critical_chokepoints_avoided": critical_roads_in_shortest
+            "critical_chokepoints_avoided": safest.get("blocked_avoided", 0),
         }
     }

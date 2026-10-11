@@ -231,7 +231,7 @@ def get_route(
     Computes both the Safest Route (flood-weighted, critical roads blocked)
     and the Shortest Route (physical distance).
     """
-    routes = routing.get_dual_routes(
+    routes = routing.get_safest_route(
         routing.G,
         origin_lat=from_lat,
         origin_lon=from_lon,

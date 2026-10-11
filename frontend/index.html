@@ -351,7 +351,7 @@
           </div>
         </div>
 
-        <!-- Route Comparison Trade-off Box -->
+        <!-- Safest Route Result -->
         <div id="routeTradeoffCard" class="route-tradeoff-card hidden">
           <div class="tradeoff-badges">
             <button id="safeRouteOption" class="tradeoff-badge safe route-option selected" onclick="selectRoute('safe')" type="button">
@@ -367,28 +367,7 @@
               <span class="route-note-label">Avoids submerged bridges & high hazard zones</span>
             </button>
 
-            <button id="shortRouteOption" class="tradeoff-badge short route-option" onclick="selectRoute('short')" type="button">
-              <span class="route-legend-line grey-dashed"></span>
-              <div class="route-header-line">
-                <span class="route-type-title">SHORTEST ROUTE</span>
-                <span id="shortStatusTag" class="route-status-tag warning-tag">SUBMERGED</span>
-              </div>
-              <div class="route-stat-row">
-                <span id="shortDistText" class="route-stat-val">-- km</span>
-                <span id="shortDurationText" class="route-duration-val">~-- mins</span>
-              </div>
-              <span class="route-note-label" id="shortHazardLabel">Crosses critical flood chokepoints</span>
-            </button>
-
             <div class="tradeoff-badge metrics">
-              <div class="stat-mini">
-                <span class="label">Distance Difference:</span>
-                <span id="diffKmText" class="val">+0.0 km</span>
-              </div>
-              <div class="stat-mini">
-                <span class="label">Flood Risk Reduction:</span>
-                <span id="riskReductionText" class="val safe-highlight">0% Safer</span>
-              </div>
               <div class="stat-mini">
                 <span class="label">Inundated Links Avoided:</span>
                 <span id="avoidedChokepointsText" class="val highlight">0 Chokepoints</span>

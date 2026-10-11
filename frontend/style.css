@@ -1,33 +1,33 @@
 /* =====================================================================
    KERALA RESILIENCE OS - COMMAND CENTER STYLESHEET
    Aesthetic: Ultra-modern Tactical Emergency Operations Dashboard
-   Palette: Midnight Slate / Glassmorphic Glow / Emergency Hazard Accents
+   Palette: Black / Red / White with blue route-state accents
 ===================================================================== */
 
 :root {
   /* Color Tokens */
-  --bg-dark: #0a0e17;
-  --bg-panel: rgba(15, 23, 42, 0.85);
-  --bg-panel-elevated: #1e293b;
-  --bg-card: rgba(30, 41, 59, 0.7);
-  --bg-card-hover: rgba(51, 65, 85, 0.85);
+  --bg-dark: #050505;
+  --bg-panel: rgba(12, 12, 12, 0.94);
+  --bg-panel-elevated: #1a1a1a;
+  --bg-card: rgba(24, 24, 24, 0.9);
+  --bg-card-hover: rgba(42, 42, 42, 0.95);
   
-  --border-subtle: rgba(255, 255, 255, 0.08);
-  --border-glow: rgba(56, 189, 248, 0.25);
+  --border-subtle: rgba(255, 255, 255, 0.14);
+  --border-glow: rgba(229, 9, 20, 0.45);
   
   --text-main: #f8fafc;
-  --text-muted: #94a3b8;
-  --text-dim: #64748b;
+  --text-muted: #c7c7c7;
+  --text-dim: #888888;
   
   /* Emergency Risk Colors */
-  --risk-low: #10b981;
-  --risk-medium: #f59e0b;
-  --risk-high: #f97316;
-  --risk-critical: #ef4444;
+  --risk-low: #ffffff;
+  --risk-medium: #bdbdbd;
+  --risk-high: #e50914;
+  --risk-critical: #ff1a1a;
   
   --color-safe-route: #38bdf8;
   --color-short-route: #38bdf8;
-  --color-blocked-road: #dc2626;
+  --color-blocked-road: #e50914;
 
   /* Typography */
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -1098,6 +1098,47 @@ body.command-center-body {
 .short-route-label.hazard-route-label span {
   background: #ef4444;
   border-color: #fee2e2;
+}
+
+/* Netflix-inspired application chrome; route lines retain blue/red state colors. */
+.app-header,
+.nav-tabs,
+.left-panel,
+.right-panel,
+.bottom-panel,
+.citizen-route-card,
+.route-tradeoff-card,
+.citizen-alerts-card,
+.control-drawer {
+  background-color: #0b0b0b;
+  border-color: rgba(255, 255, 255, 0.16);
+}
+
+.nav-tab.active,
+.btn-run-simulation,
+.btn-compute-route,
+.chart-tab-btn.active,
+.show-route-finder-btn:hover {
+  background: #e50914;
+  border-color: #e50914;
+  color: #ffffff;
+}
+
+.nav-tab.active,
+.btn-run-simulation:hover,
+.btn-compute-route:hover {
+  box-shadow: 0 0 18px rgba(229, 9, 20, 0.35);
+}
+
+.btn-run-simulation,
+.btn-compute-route {
+  background-image: none;
+}
+
+.citizen-header-title h3,
+.version-tag,
+.route-type-title {
+  color: #ffffff;
 }
 
 .route-type-title {

@@ -10,7 +10,6 @@ let hospitalMarkersLayer = null;
 let schoolMarkersLayer = null;
 let floodedRoadsLayer = null;
 let safestRouteLayer = null;
-let shortestRouteLayer = null;
 let originMarker = null;
 let destMarker = null;
 
@@ -307,7 +306,6 @@ function initMap() {
   schoolMarkersLayer = L.layerGroup().addTo(map);
   floodedRoadsLayer = L.layerGroup().addTo(map);
   safestRouteLayer = L.layerGroup().addTo(map);
-  shortestRouteLayer = L.layerGroup().addTo(map);
 }
 
 // =====================================================================
@@ -413,7 +411,9 @@ async function runSimulation() {
 function simulateMock(rainfall_mm, river_level_m) {
   // Stage A: Sigmoid rainfall hazard probability
   const k = 0.0065;
-  const rain_hazard = Math.min(0.99, Math.max(0.02, 1.0 / (1.0 + Math.exp(-k * (rainfall_mm - 280.0)))));
+  const rain_hazard = rainfall_mm <= 0
+    ? 0
+    : Math.min(0.99, Math.max(0.02, 1.0 / (1.0 + Math.exp(-k * (rainfall_mm - 280.0)))));
   
   // River normalized
   const river_norm = Math.min(1.0, Math.max(0.0, river_level_m / 14.0));
@@ -442,7 +442,9 @@ function simulateMock(rainfall_mm, river_level_m) {
     const interaction = 0.12 * rain_hazard * river_norm * (1.0 - elev_risk);
     const gbr_score = Math.min(1.0, Math.max(0.0, rule_score + interaction));
 
-    const final_risk = Math.min(0.99, Math.max(0.05, 0.5 * rule_score + 0.5 * gbr_score));
+    const final_risk = rainfall_mm <= 0 && river_level_m <= 0
+      ? 0.10 + 0.05 * p.hist_risk
+      : Math.min(0.99, Math.max(0.05, 0.5 * rule_score + 0.5 * gbr_score));
 
     let risk_class = "low";
     if (final_risk >= 0.75) risk_class = "critical";
@@ -1239,6 +1241,29 @@ function generateClientCurvedGeometry(waypoints) {
   return out;
 }
 
+function trimRouteAtDestination(coordinates, destination) {
+  if (!coordinates?.length || !destination) return coordinates || [];
+  const destinationLat = destination.lat;
+  const destinationLon = destination.lon;
+  let closestIndex = 0;
+  let closestDistance = Infinity;
+
+  coordinates.forEach((point, index) => {
+    const distance = (point[0] - destinationLat) ** 2 + (point[1] - destinationLon) ** 2;
+    if (distance < closestDistance) {
+      closestDistance = distance;
+      closestIndex = index;
+    }
+  });
+
+  const trimmed = coordinates.slice(0, closestIndex + 1);
+  const last = trimmed[trimmed.length - 1];
+  if (!last || (last[0] - destinationLat) ** 2 + (last[1] - destinationLon) ** 2 > 0.00000001) {
+    trimmed.push([destinationLat, destinationLon]);
+  }
+  return trimmed;
+}
+
 async function fetchRoute(hideFinder = false) {
   const origKey = document.getElementById("routeOriginSelect").value;
   const destKey = document.getElementById("routeDestSelect").value;
@@ -1297,37 +1322,19 @@ function routeMock(orig, dest) {
   // Critical zones from current simulation
   const criticalZones = new Set(currentZonesData.filter(z => z.risk_class === "critical").map(z => z.zone_id));
 
-  const shortest = findClientRoadPath(orig, dest, false, criticalZones);
   const safest = findClientRoadPath(orig, dest, true, criticalZones);
-  const shortestDistKm = shortest.distanceKm;
   const safeDistKm = safest.distanceKm;
   const safestStatus = safest.path.length > 0 ? "success" : "no_safe_path";
-  const chokepointsAvoided = shortest.blockedEdges;
 
   return {
     safest: {
       status: safestStatus,
-      coordinates: safest.coordinates,
+      coordinates: trimRouteAtDestination(safest.coordinates, dest),
       distance_km: safeDistKm,
       duration_minutes: Math.round((safeDistKm / 35.0) * 60),
       message: safestStatus === "success" ? "Safe evacuation corridor active." : "Destination cut off by critical flood waters.",
-      road_names: safest.roadNames
-    },
-    shortest: {
-      status: "success",
-      coordinates: shortest.coordinates,
-      distance_km: shortestDistKm,
-      duration_minutes: Math.round((shortestDistKm / 35.0) * 60),
-      road_names: shortest.roadNames,
-      blocked_chokepoints_crossed: chokepointsAvoided,
-      is_submerged: chokepointsAvoided > 0
-    },
-    tradeoff: {
-      extra_distance_km: Math.max(0, parseFloat((safeDistKm - shortestDistKm).toFixed(1))),
-      risk_reduction_pct: shortest.avgRisk > 0
-        ? Math.max(0, Math.round((1 - safest.avgRisk / shortest.avgRisk) * 100))
-        : 65,
-      critical_chokepoints_avoided: chokepointsAvoided
+      road_names: safest.roadNames,
+      blocked_avoided: safest.blockedEdges
     }
   };
 }
@@ -1418,7 +1425,7 @@ function findClientRoadPath(orig, dest, safe, criticalZones) {
 
   return {
     path,
-    coordinates: curvedCoords,
+    coordinates: trimRouteAtDestination(curvedCoords, dest),
     distanceKm: Number(((length + 1500) / 1000).toFixed(2)),
     avgRisk,
     roadNames: [...new Set(edges.map(edge => edge.name).filter(Boolean))],
@@ -1445,33 +1452,17 @@ function renderRouteOnMap(routeData, origNode, destNode) {
   const safeDurationEl = document.getElementById("safeDurationText");
   const safeStatusTag = document.getElementById("safeStatusTag");
 
-  const shortDistEl = document.getElementById("shortDistText");
-  const shortDurationEl = document.getElementById("shortDurationText");
-  const shortStatusTag = document.getElementById("shortStatusTag");
-  const shortHazardLabel = document.getElementById("shortHazardLabel");
-
-  const diffKmEl = document.getElementById("diffKmText");
-  const riskReductionEl = document.getElementById("riskReductionText");
   const avoidedEl = document.getElementById("avoidedChokepointsText");
   const noticeEl = document.getElementById("routeNoticeText");
 
   const safest = routeData.safest || {};
-  const shortest = routeData.shortest || {};
   const tradeoff = routeData.tradeoff || {};
-  const shortIsHazardous = tradeoff.critical_chokepoints_avoided > 0 || shortest.is_submerged;
-  selectRoute(selectedRoute, false);
 
   const safeDuration = safest.duration_minutes || (safest.distance_km ? Math.round((safest.distance_km / 35) * 60) : 0);
-  const shortDuration = shortest.duration_minutes || (shortest.distance_km ? Math.round((shortest.distance_km / 35) * 60) : 0);
 
   safeDistEl.textContent = `${safest.distance_km || 0} km`;
   if (safeDurationEl) safeDurationEl.textContent = `~${safeDuration} mins`;
 
-  shortDistEl.textContent = `${shortest.distance_km || 0} km`;
-  if (shortDurationEl) shortDurationEl.textContent = `~${shortDuration} mins`;
-
-  diffKmEl.textContent = `+${tradeoff.extra_distance_km || 0} km`;
-  if (riskReductionEl) riskReductionEl.textContent = `${tradeoff.risk_reduction_pct || 65}% Safer`;
   avoidedEl.textContent = `${tradeoff.critical_chokepoints_avoided || 0} Chokepoints`;
 
   // Draw Origin Marker
@@ -1506,66 +1497,36 @@ function renderRouteOnMap(routeData, origNode, destNode) {
     </div>
   `).addTo(map);
 
-  const shortestIsAvailable = shortest.coordinates && shortest.coordinates.length > 0;
-  const safestIsAvailable = safest.status === "success" && safest.coordinates && safest.coordinates.length > 0;
-
-  // Keep both alternatives visible, like a directions map. The selected route
-  // is emphasized while the other route remains available for comparison.
-  if (shortestIsAvailable) {
-    const shortLine = L.polyline(shortest.coordinates, {
-      color: shortIsHazardous ? "#ef4444" : "#38bdf8",
-      weight: selectedRoute === "short" ? 6 : 4,
-      dashArray: "8, 8",
-      opacity: selectedRoute === "short" ? 0.98 : 0.58
-    });
-    shortLine.on("click", () => selectRoute("short"));
-    shortestRouteLayer.addLayer(shortLine);
-    shortestRouteLayer.addLayer(createRouteLabel(shortest.coordinates, "SHORTEST", "short", shortIsHazardous));
-  }
-
+  const safestCoordinates = safest.coordinates && safest.coordinates.length > 0
+    ? safest.coordinates
+    : [];
+  const safestIsAvailable = safestCoordinates.length > 0;
   if (safestIsAvailable) {
-    safeDistEl.textContent = `${safest.distance_km} km`;
-    const safeLine = L.polyline(safest.coordinates, {
-      color: "#38bdf8",
-      weight: selectedRoute === "safe" ? 7 : 5,
-      opacity: selectedRoute === "safe" ? 1 : 0.62
+    const safeLine = L.polyline(safestCoordinates, {
+      color: safest.status === "success" ? "#38bdf8" : "#ef4444",
+      weight: 7,
+      opacity: 1
     });
-    safeLine.on("click", () => selectRoute("safe"));
     safestRouteLayer.addLayer(safeLine);
-    safestRouteLayer.addLayer(createRouteLabel(safest.coordinates, "SAFEST", "safe"));
+    safestRouteLayer.addLayer(createRouteLabel(safestCoordinates, "SAFEST", "safe", safest.status !== "success"));
   }
 
   // Report each route's actual state independently of which route is selected.
   if (safeStatusTag) {
-    safeStatusTag.className = safestIsAvailable ? "route-status-tag safe-tag" : "route-status-tag warning-tag";
-    safeStatusTag.textContent = safestIsAvailable ? "PASSABLE VIA BYPASS" : "SEVERED BY FLOOD";
-  }
-  if (shortStatusTag) {
-    shortStatusTag.className = shortIsHazardous ? "route-status-tag warning-tag" : "route-status-tag safe-tag";
-    shortStatusTag.textContent = shortIsHazardous ? "SUBMERGED / HAZARDOUS" : "PASSABLE";
-    if (shortHazardLabel) {
-      shortHazardLabel.textContent = shortIsHazardous
-        ? `Crosses ${tradeoff.critical_chokepoints_avoided || 1} inundated corridor(s)`
-        : "Direct path clear of flooding";
-    }
+    const safeIsHazardous = safest.status !== "success";
+    safeStatusTag.className = safeIsHazardous ? "route-status-tag warning-tag" : "route-status-tag safe-tag";
+    safeStatusTag.textContent = safeIsHazardous ? "HAZARDOUS ALTERNATIVE" : "PASSABLE VIA BYPASS";
   }
 
-  const activeLayer = selectedRoute === "short" ? shortestRouteLayer : safestRouteLayer;
-  const activeLine = activeLayer.getLayers().find(layer => typeof layer.getBounds === "function");
+  const activeLine = safestRouteLayer.getLayers().find(layer => typeof layer.getBounds === "function");
   if (activeLine) {
     map.fitBounds(activeLine.getBounds(), { padding: [50, 50] });
   }
 
-  if (selectedRoute === "short") {
+  if (safestIsAvailable && safest.status === "success") {
     noticeEl.innerHTML = `
-      ${shortest.is_submerged ? "⚠️" : "✅"} <b>Shortest Route selected to ${destNode.name}:</b>
-      ${shortest.is_submerged ? "Crosses flood-affected corridors. Use only if conditions permit." : "Direct path with no critical flood chokepoints."}
-      Estimated travel time: <b>${shortDuration} minutes</b>.
-    `;
-  } else if (safestIsAvailable) {
-    noticeEl.innerHTML = `
-      ✅ <b>Safest Route selected to ${destNode.name}:</b> Circumvents ${tradeoff.critical_chokepoints_avoided || 1} inundated road link(s)
-      via higher elevation arterial bypasses. Flood hazard reduction: <b>${tradeoff.risk_reduction_pct || 65}%</b>.
+      ✅ <b>Safest Route to ${destNode.name}:</b> Avoids ${tradeoff.critical_chokepoints_avoided || 0} inundated road link(s)
+      via risk-weighted A* routing.
       Estimated travel time: <b>${safeDuration} minutes</b>. Passable for civilian vehicles.
     `;
   } else {
@@ -1593,9 +1554,8 @@ function createRouteLabel(coordinates, label, routeType, isHazardous = false) {
 }
 
 function selectRoute(routeType, redraw = true) {
-  selectedRoute = routeType === "short" ? "short" : "safe";
-  document.getElementById("safeRouteOption").classList.toggle("selected", selectedRoute === "safe");
-  document.getElementById("shortRouteOption").classList.toggle("selected", selectedRoute === "short");
+  selectedRoute = "safe";
+  document.getElementById("safeRouteOption").classList.add("selected");
 
   if (redraw && latestRouteData) {
     const origin = resolveLocation(document.getElementById("routeOriginSelect").value, "origin");
@@ -1643,7 +1603,6 @@ function toggleFloodedRoadsLayer() {
 
 function clearRouteDisplays() {
   safestRouteLayer.clearLayers();
-  shortestRouteLayer.clearLayers();
   if (originMarker) map.removeLayer(originMarker);
   if (destMarker) map.removeLayer(destMarker);
 }
@@ -1661,6 +1620,8 @@ function updateRainDisplay(val) {
     pill.innerHTML = `<span class="intensity-label" style="color:#f97316">⚠️ Extremely Heavy Monsoon Deluge</span>`;
   } else if (val >= 150) {
     pill.innerHTML = `<span class="intensity-label" style="color:#f59e0b">🌧️ Heavy Monsoon Showers</span>`;
+  } else if (Number(val) <= 0) {
+    pill.innerHTML = `<span class="intensity-label" style="color:#ffffff">✓ No Active Rainfall Hazard</span>`;
   } else {
     pill.innerHTML = `<span class="intensity-label" style="color:#10b981">🌤️ Moderate / Normal Rainfall</span>`;
   }

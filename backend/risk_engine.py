@@ -30,6 +30,9 @@ def compute_rain_hazard(rainfall_mm: float) -> float:
     Converts officer rainfall slider (0-1000 mm) into rainfall hazard probability (0 to 1).
     Scales 3-day / peak event rainfall to historical Kerala monsoon feature space.
     """
+    if rainfall_mm <= 0:
+        return 0.0
+
     # Monotone sigmoid foundation scaled to real Kerala extremes:
     # 0 mm -> 0.05
     # 150 mm (Heavy rain) -> 0.35
@@ -108,6 +111,9 @@ def score_zones(zones_df: pd.DataFrame, rainfall_mm: float, river_level_m: float
 
         # Hybrid blend: 50% explainable formula + 50% non-linear GBR
         final_score = 0.50 * rule_val + 0.50 * gbr_val
+        if rainfall_mm <= 0 and river_level_m <= 0:
+            # Static vulnerability is not an active flood condition.
+            final_score = 0.10 + 0.05 * hist_risk
         final_score = float(np.clip(final_score, 0.05, 0.99))
 
         r_class = get_risk_class(final_score)
